@@ -5,6 +5,9 @@ var logger = require('morgan');
 
 require('dotenv').config();
 require('./config/database');
+// load system settings document (async, so not available in server.js)
+// access in other modules via require('./config/settings').current
+require('./config/settings').get();
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
