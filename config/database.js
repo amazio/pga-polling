@@ -11,5 +11,5 @@ mongoose.connect(
 );
 
 db.once('open', function() {
-  console.log(`Connected to MongoDB at ${db.host}:${db.port} database ${db.name}`);
+  console.log(`Connected to MongoDB at ${db.host}:${db.port}`);
 });
