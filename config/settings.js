@@ -8,12 +8,12 @@ const defaultSettings = {
   pollLeaderboardSeconds: 30,
 };
 
-
 module.exports = {
-  get
+  load,
+  getCurrent
 };
 
-async function get() {
+async function load() {
   return new Promise(resolve => {
     if (settings) {
       resolve(settings);
@@ -30,3 +30,7 @@ async function get() {
     }
   });
 } 
+
+function getCurrent() {
+  return settings;
+}
