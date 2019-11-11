@@ -18,6 +18,7 @@ async function add(req, res) {
 const promises = [];
 setTimeout(function() {
   settings.subscriptions.forEach(function(sub) {
+    if (sub.postUrl.startsWith('http:') && process.env.NODE_ENV === 'production') return;
     promises.push(fetch(sub.postUrl, {
       method: 'post',
       body: JSON.stringify({message: 'This is a test data push'}),
@@ -27,10 +28,10 @@ setTimeout(function() {
     .then(consumerResponse => {
       sub.lastUpdated = consumerResponse.lastUpdated;
     }));
-    Promise.all(promises).then(function() {
-      settings.save(function() {
-        console.log('all subscriptions updated');
-      });
+  });
+  Promise.all(promises).then(function() {
+    settings.save(function() {
+      console.log('all subscriptions updated');
     });
   });
 }, 10000);
