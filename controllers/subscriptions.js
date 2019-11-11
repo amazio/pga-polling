@@ -18,16 +18,20 @@ async function add(req, res) {
 const promises = [];
 setTimeout(function() {
   settings.subscriptions.forEach(function(sub) {
-    if (sub.postUrl.startsWith('http:') && process.env.NODE_ENV === 'production') return;
-    promises.push(fetch(sub.postUrl, {
-      method: 'post',
-      body: JSON.stringify({message: 'This is a test data push'}),
-      headers: {'Content-Type': 'application/json'}
-    })
-    .then(res => res.json())
-    .then(consumerResponse => {
-      sub.lastUpdated = consumerResponse.lastUpdated;
-    }));
+    if (
+      (sub.postUrl.startsWith('https:') && process.env.NODE_ENV === 'production') ||
+      (sub.postUrl.startsWith('http:') && process.env.NODE_ENV !== 'production')
+    ) {
+      promises.push(fetch(sub.postUrl, {
+        method: 'post',
+        body: JSON.stringify({message: 'This is a test data push'}),
+        headers: {'Content-Type': 'application/json'}
+      })
+      .then(res => res.json())
+      .then(consumerResponse => {
+        sub.lastUpdated = consumerResponse.lastUpdated;
+      }));
+    }
   });
   Promise.all(promises).then(function() {
     settings.save(function() {
