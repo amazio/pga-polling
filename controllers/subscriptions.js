@@ -1,3 +1,5 @@
+const fetch = require('node-fetch');
+
 const settings = require('../config/settings').getCurrent();
 
 module.exports = {
@@ -11,6 +13,28 @@ async function add(req, res) {
   if (existingSub) settings.subscriptions.remove(existingSub._id);
   settings.subscriptions.push(req.body);
   try {
+
+// testing
+const promises = [];
+setTimeout(function() {
+  settings.subscriptions.forEach(function(sub) {
+    promises.push(fetch(sub.postUrl, {
+      method: 'post',
+      body: JSON.stringify({message: 'This is a test data push'}),
+      headers: {'Content-Type': 'application/json'}
+    })
+    .then(res => res.json())
+    .then(consumerResponse => {
+      sub.lastUpdated = consumerResponse.lastUpdated;
+    }));
+    Promise.all(promises).then(function() {
+      settings.save(function() {
+        console.log('all subscriptions updated');
+      });
+    });
+  });
+}, 10000);
+
     await settings.save();
     return res.json('Subscription added');
   } catch {
