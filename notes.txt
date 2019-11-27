@@ -1,4 +1,0 @@
-This app is hosted on digitocean (amaziosoftware.com account) in the "pga" droplet.
-It is running as a pm2 process on port 3001.
-It can be browsed to at https://www.managerincharge.com/pga-polling
-
