@@ -8,6 +8,9 @@ var logger = require('morgan');
   loaded within the bin/www
 */
 
+// Start polling engine
+require('./services/polling').load();
+
 var indexRouter = require('./routes/index');
 var subscriptionsRouter = require('./routes/api/subscriptions');
 

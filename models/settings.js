@@ -7,7 +7,17 @@ const subscriptionSchema = new Schema({
 });
 
 const settingsSchema = new Schema({
+  pollingActive: {
+    type: Boolean,
+    default: false
+  },
+  pollingStrategy: {
+    type: String,
+    default: 'pgatour'
+  },
   pollLeaderboardSeconds: Number,
+  lastPollStarted: Date,
+  lastPollFinished: Date,
   subscriptions: [subscriptionSchema]
 }, {
   timestamps: true
