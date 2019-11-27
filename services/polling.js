@@ -23,6 +23,7 @@ async function startPolling(req, res) {
   strategy = require(`${STRATEGY_DIR}/${settings.pollingStrategy}`);
   doPoll();
   timerId = setInterval(doPoll, 1000 * settings.pollLeaderboardSeconds);
+  console.log('Polling started');
   if (res) res.redirect('/');
 }
 
@@ -30,6 +31,7 @@ async function stopPolling(req, res) {
   if (timerId) clearInterval(timerId);
   settings.pollingActive = false;
   await settings.save();
+  console.log('Polling stopped');
   if (res) res.redirect('/');
 }
 
