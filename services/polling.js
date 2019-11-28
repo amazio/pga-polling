@@ -1,5 +1,6 @@
 var path = require('path');
 var fs = require('fs');
+var pollTimes = require('../config/tourney-state-poll-times');
 
 const STRATEGY_DIR = path.join(__dirname, '..', 'polling-strategies');
 
@@ -19,19 +20,14 @@ function load() {
 }
 
 async function startPolling(req, res) {
-  if (timerId) clearInterval(timerId);
   strategy = require(`${STRATEGY_DIR}/${settings.pollingStrategy}`);
-  var tourney = await doPoll();
-  if (tourney.wasUpdated) {
-    // update subscribers
-  }
-  timerId = setInterval(doPoll, 1000 * settings.pollLeaderboardSeconds);
+  doPoll();
   console.log('Polling started');
   if (res) res.redirect('/');
 }
 
 async function stopPolling(req, res) {
-  if (timerId) clearInterval(timerId);
+  if (timerId) clearTimeout(timerId);
   settings.pollingActive = false;
   await settings.save();
   console.log('Polling stopped');
@@ -49,11 +45,16 @@ async function getStrategies() {
 }
 
 async function doPoll() {
-  return new Promise(async function(resolve) {
-    settings.lastPollStarted = new Date();
-    var result = await strategy.poll();
-    settings.lastPollFinished = new Date();
-    await settings.save(); 
-    return resolve(result.tourney);
-  });
+  if (!settings.pollingActive) {
+    if (timerId) clearTimeout(timerId);
+    return;
+  }
+  settings.lastPollStarted = new Date();
+  var {tourney, wasUpdated} = await strategy.poll();
+  settings.lastPollFinished = new Date();
+  await settings.save();
+  if (wasUpdated) {
+    // update subscribers
+  }
+  timerId = setTimeout(doPoll, pollTimes[tourney.getTourneyState()]);
 }
