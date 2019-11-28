@@ -16,6 +16,19 @@ const settingsSchema = new Schema({
     default: 'pgatour'
   },
   pollLeaderboardSeconds: Number,
+  /*
+    isBetweenTourneys is set to true when a tourny has finished.
+    It then is set to false when the start_date in the json 
+    from the betweenTourneyPollMinutes poll is the same as today
+  */
+  isBetweenTourneys: {
+    type: Boolean,
+    default: false
+  },
+  betweenTourneyPollMinutes: {
+    type: Number,
+    default: 240 // 4 hours
+  },
   lastPollStarted: Date,
   lastPollFinished: Date,
   subscriptions: [subscriptionSchema]

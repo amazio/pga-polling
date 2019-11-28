@@ -21,7 +21,10 @@ function load() {
 async function startPolling(req, res) {
   if (timerId) clearInterval(timerId);
   strategy = require(`${STRATEGY_DIR}/${settings.pollingStrategy}`);
-  doPoll();
+  var tourney = await doPoll();
+  if (tourney.wasUpdated) {
+    // update subscribers
+  }
   timerId = setInterval(doPoll, 1000 * settings.pollLeaderboardSeconds);
   console.log('Polling started');
   if (res) res.redirect('/');
@@ -46,8 +49,11 @@ async function getStrategies() {
 }
 
 async function doPoll() {
-  settings.lastPollStarted = new Date();
-  await strategy.poll();
-  settings.lastPollFinished = new Date();
-  await settings.save(); 
+  return new Promise(async function(resolve) {
+    settings.lastPollStarted = new Date();
+    var result = await strategy.poll();
+    settings.lastPollFinished = new Date();
+    await settings.save(); 
+    return resolve(result.tourney);
+  });
 }

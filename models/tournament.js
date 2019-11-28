@@ -17,32 +17,44 @@ const playerSchema = new Schema({
   name: String,
   playerId: String,
   isAmateur: {type: Boolean, default: false},
-  moneyEvent: Number,
   curPosition: {type: String, default: ''},
   curRound: {type: Number, default: 1},
   backNine: {type: Boolean, default: false},
   thru: {type: Number, default: null},
   today: {type: Number, default: null},
   total: {type: Number, default: 0},
+  moneyEvent: Number,
   rounds: [roundSchema]
 });
 
 const tournamentSchema = new Schema({
+  tid: String,
+  seasonYear: String,
   name: String,
   lastUpdated: Date,
-  tid: String,
-  startDate: Date,
-  endDate: Date,
-  numRounds: Number,
+  startDate: String,
+  endDate: String,
   isStarted: Boolean,
   isFinished: Boolean,
   curRound: Number,
   roundState: String,
   inPlayoff: Boolean,
-  numPaidPlayers: Number,
+  cutCount: Number,
   leaderboard: [playerSchema]
 }, {
   timestamps: true
 });
+
+tournamentSchema.methods.getTourneyState = function() {
+  if (this.isStarted && this.isFinished) return 'betweenTourneys';
+  if (this.isStarted && !this.isFinished && (this.roundState === 'Official')) return 'waitingToStart';
+  var today = new Date().toISOString().substring(0, 10); // 'YYYY-MM-DD'
+  if (!this.isStarted && (this.startDate === today)) return 'waitingToStart';
+  return 'roundStarted';
+};
+
+tournamentSchema.statics.findByTourneyId = function(tid, seasonYear) {
+  return this.findOne({tid, seasonYear});
+}
 
 module.exports = mongoose.model('Tournament', tournamentSchema);
