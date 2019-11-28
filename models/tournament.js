@@ -7,7 +7,7 @@ const holeSchema = new Schema({
 });
 
 const roundSchema = new Schema({
-  num: String,
+  num: Number,
   strokes: {type: Number, default: null},
   teeTime: {type: Date, default: null},
   holes: [holeSchema]

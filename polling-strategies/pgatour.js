@@ -62,13 +62,13 @@ async function updateTourney(tourney, json) {
   tourney.curRound = json.current_round;
   tourney.roundState = json.round_state;
   tourney.inPlayoff = json.in_playoff;
-  tourney.leaderboard = buildLeaderboard(json.players);
+  tourney.leaderboard = buildLeaderboard(tourney, json.players);
 
 
   await tourney.save();
 }
 
-function buildLeaderboard(players) {
+function buildLeaderboard(tourney, players) {
   return players.map(p => ({
     name: `${p.player_bio.first_name} ${p.player_bio.last_name}`,
     playerId: p.player_id,
@@ -80,11 +80,30 @@ function buildLeaderboard(players) {
     today: p.today,
     total: p.total,
     moneyEvent: p.rankings.projected_money_event,
-    rounds: buildRounds(p)
+    rounds: buildRounds(tourney, p)
   }));
 }
 
-function buildRounds(player) {
-  // TODO
-  return [];
+function buildRounds(tourney, player) {
+  // Get player's previous rounds
+  var curRoundNum = player.current_round;
+  var rounds = tourney.leaderboard.find(p => p.playerId === player.player_id).rounds;
+  var pollRound = player.rounds[curRoundNum - 1];
+  if (!pollRound) return rounds;
+  var roundDoc = rounds.find(r => r.num === curRoundNum);
+  if (!roundDoc) {
+    rounds.push({num: curRoundNum});
+    roundDoc = rounds[rounds.length - 1];
+  }
+  roundDoc.strokes = pollRound.strokes;
+  roundDoc.teeTime = pollRound.tee_time;
+  roundDoc.holes = buildHoles(player.holes);
+  return rounds;
+}
+
+function buildHoles(holes) {
+  return holes.map(h => ({
+    strokes: h.strokes,
+    par: h.par
+  }));
 }
