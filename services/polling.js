@@ -1,5 +1,6 @@
 var path = require('path');
 var fs = require('fs');
+var request = require('request-promise-native');
 var pollTimes = require('../config/tourney-state-poll-times');
 
 const STRATEGY_DIR = path.join(__dirname, '..', 'polling-strategies');
@@ -53,8 +54,26 @@ async function doPoll() {
   var {tourney, wasUpdated} = await strategy.poll();
   settings.lastPollFinished = new Date();
   await settings.save();
-  if (wasUpdated) {
-    // update subscribers
-  }
+  if (wasUpdated) updateSubscribers(tourney);
   timerId = setTimeout(doPoll, pollTimes[tourney.getTourneyState()]);
+}
+
+function updateSubscribers(tourney) {
+  settings.subscriptions.forEach(sub => {
+    try {
+      promises.push(
+        request({
+          uri: sub.postUrl,
+          method: 'POST',
+          json: true,
+          body: tourney
+        })
+      );
+    } catch(e) {
+      var doc = settings.subscriptions.id(sub._id);
+      doc.errorCount++;
+      doc.lastError = e;
+      settings.save();
+    }
+  });
 }

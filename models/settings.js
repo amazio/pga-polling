@@ -3,7 +3,9 @@ const Schema = mongoose.Schema;
 
 const subscriptionSchema = new Schema({
   postUrl: {type: String, required: true},
-  lastUpdated: {type: Date}
+  lastUpdated: {type: Date},
+  errorCount: {type: Number, default: 0},
+  lastError: {type: String}
 });
 
 const settingsSchema = new Schema({

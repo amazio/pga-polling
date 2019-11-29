@@ -85,16 +85,27 @@ function buildLeaderboard(tourney, players) {
 }
 
 function buildRounds(tourney, player) {
-  // Get player's previous rounds
+  var rounds;
   var curRoundNum = player.current_round;
-  var rounds = tourney.leaderboard.find(p => p.playerId === player.player_id).rounds;
+  // Get current player subdoc from tourney doc
+  var playerDoc = tourney.leaderboard.find(p => p.playerId === player.player_id);
+  // There will not be a player subdoc if this is the first poll for this tourney
+  if (playerDoc) {
+    rounds = tourney.leaderboard.find(p => p.playerId === player.player_id).rounds;
+  } else {
+    rounds = [];
+  }
   var pollRound = player.rounds[curRoundNum - 1];
+  // Player might have missed cut, thus...
   if (!pollRound) return rounds;
   var roundDoc = rounds.find(r => r.num === curRoundNum);
   if (!roundDoc) {
+    // Player does not yet have a subdoc for the current round
     rounds.push({num: curRoundNum});
+    // Grab the just added round so that it can be "updated"
     roundDoc = rounds[rounds.length - 1];
   }
+  // Update the round
   roundDoc.strokes = pollRound.strokes;
   roundDoc.teeTime = pollRound.tee_time;
   roundDoc.holes = buildHoles(player.holes);
