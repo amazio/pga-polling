@@ -60,20 +60,20 @@ async function doPoll() {
 
 function updateSubscribers(tourney) {
   settings.subscriptions.forEach(sub => {
-    try {
-      promises.push(
-        request({
-          uri: sub.postUrl,
-          method: 'POST',
-          json: true,
-          body: tourney
-        })
-      );
-    } catch(e) {
-      var doc = settings.subscriptions.id(sub._id);
+    var doc = settings.subscriptions.id(sub._id);
+    request({
+      uri: sub.postUrl,
+      method: 'POST',
+      json: true,
+      body: tourney
+    }).then(function() {
+      doc.lastUpdated = new Date();
+    }).catch(function(e){
       doc.errorCount++;
-      doc.lastError = e;
+      doc.lastErrorMsg = e;
+      doc.lastErrorDate = new Date();
+    }).finally(function() {
       settings.save();
-    }
+    });
   });
 }

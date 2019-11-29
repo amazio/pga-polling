@@ -5,7 +5,8 @@ const subscriptionSchema = new Schema({
   postUrl: {type: String, required: true},
   lastUpdated: {type: Date},
   errorCount: {type: Number, default: 0},
-  lastError: {type: String}
+  lastErrorMsg: {type: String},
+  lastErrorDate: {type: Date}
 });
 
 const settingsSchema = new Schema({
