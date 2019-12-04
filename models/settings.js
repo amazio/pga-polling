@@ -20,6 +20,7 @@ const settingsSchema = new Schema({
   },
   lastPollStarted: Date,
   lastPollFinished: Date,
+  nextPoll: Date,
   subscriptions: [subscriptionSchema]
 }, {
   timestamps: true

@@ -56,9 +56,11 @@ async function doPoll() {
   settings.lastPollStarted = new Date();
   var {tourney, wasUpdated} = await strategy.poll();
   settings.lastPollFinished = new Date();
+  var nextPollMs = pollTimes[tourney.getTourneyState()];
+  settings.nextPoll = new Date(Date.now() + nextPollMs);
+  timerId = setTimeout(doPoll, nextPollMs);
   await settings.save();
   if (wasUpdated) updateSubscribers(tourney);
-  timerId = setTimeout(doPoll, pollTimes[tourney.getTourneyState()]);
 }
 
 function updateSubscribers(tourney) {
