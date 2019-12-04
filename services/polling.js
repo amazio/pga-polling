@@ -22,6 +22,9 @@ function load() {
 
 async function startPolling(req, res) {
   strategy = require(`${STRATEGY_DIR}/${settings.pollingStrategy}`);
+  if (timerId) clearTimeout(timerId);
+  settings.pollingActive = true;
+  await settings.save();
   doPoll();
   console.log('Polling started');
   if (res) res.redirect('/');

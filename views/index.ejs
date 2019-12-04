@@ -5,6 +5,17 @@
 <hr>
 
 <section>
+  <% var status = settings.pollingActive ? 'Polling' : 'Stopped' %>
+  <% var action = settings.pollingActive ? 'stop' : 'start' %>
+  <h3>Polling Status: <span><%= status %></span></h3>
+  <form action="/polling/<%= action %>" method="POST">
+    <button class="btn btn-primary"><%= action.toUpperCase() %> Polling</button>
+  </form>
+</section>
+
+<hr>
+
+<section>
   <%= JSON.stringify(settings) %>
 </section>
 
