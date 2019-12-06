@@ -11,7 +11,7 @@
     <dt>Polling Status</dt>
     <dd><%= status %></dd>
     <dt>Next Poll</dt>
-    <dd><%= settings.nextPoll.toLocaleString() %></dd>
+    <dd><%= settings.nextPoll.toLocaleString(undefined, {timeZone: 'America/Los_Angeles'}) %></dd>
   </dl>
   <form action="/polling/<%= action %>" method="POST">
     <button class="btn btn-primary"><%= action.toUpperCase() %> Polling</button>
