@@ -66,8 +66,6 @@ async function updateTourney(tourney, json) {
   tourney.roundState = json.round_state;
   tourney.inPlayoff = json.in_playoff;
   tourney.leaderboard = buildLeaderboard(tourney, json.players);
-
-
   await tourney.save();
 }
 

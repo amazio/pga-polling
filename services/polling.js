@@ -65,18 +65,18 @@ async function doPoll() {
 
 function updateSubscribers(tourney) {
   settings.subscriptions.forEach(sub => {
-    var doc = settings.subscriptions.id(sub._id);
+    var subDoc = settings.subscriptions.id(sub._id);
     request({
       uri: sub.postUrl,
       method: 'POST',
       json: true,
-      body: tourney
+      body: tourneyCopy
     }).then(function() {
-      doc.lastUpdated = new Date();
+      subDoc.lastUpdated = new Date();
     }).catch(function(e){
-      doc.errorCount++;
-      doc.lastErrorMsg = e;
-      doc.lastErrorDate = new Date();
+      subDoc.errorCount++;
+      subDoc.lastErrorMsg = e;
+      subDoc.lastErrorDate = new Date();
     }).finally(function() {
       settings.save();
     });
