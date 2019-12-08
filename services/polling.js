@@ -11,8 +11,9 @@ var strategy;
 
 module.exports = {
   load,
-  startPolling,
-  stopPolling
+  doPoll,
+  startPolling,  // accesible via HTTP request as well
+  stopPolling    // accesible via HTTP request as well
 };
 
 function load() {
@@ -48,7 +49,7 @@ async function getStrategies() {
   });
 }
 
-async function doPoll() {
+async function doPoll(forceUpdate) {
   if (!settings.pollingActive) {
     if (timerId) clearTimeout(timerId);
     return;
@@ -60,7 +61,7 @@ async function doPoll() {
   settings.nextPoll = new Date(Date.now() + nextPollMs);
   timerId = setTimeout(doPoll, nextPollMs);
   await settings.save();
-  if (wasUpdated) updateSubscribers(tourney);
+  if (wasUpdated || forceUpdate) updateSubscribers(tourney);
 }
 
 function updateSubscribers(tourney) {
