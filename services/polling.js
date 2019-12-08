@@ -70,7 +70,7 @@ function updateSubscribers(tourney) {
       uri: sub.postUrl,
       method: 'POST',
       json: true,
-      body: tourneyCopy
+      body: tourney
     }).then(function() {
       subDoc.lastUpdated = new Date();
     }).catch(function(e){
