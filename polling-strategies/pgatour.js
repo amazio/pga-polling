@@ -1,4 +1,6 @@
-const URL = 'https://statdata.pgatour.com/r/current/leaderboard-v2.json';
+
+const URL_TID = 'https://statdata.pgatour.com/r/current/message.json';
+const URL_TEMPLATE = 'https://statdata.pgatour.com/r/{0}/leaderboard-v2.json';
 
 var request = require('request-promise-native');
 var Tournament = require('../models/tournament');
@@ -11,7 +13,8 @@ function poll() {
   return new Promise(async function(resolve) {
     var wasUpdated = null;
     try {
-      var json = await request(URL, {json: true});
+      var tidJson = await request(URL_TID, {json: true});
+      var json = await request(URL_TEMPLATE.replace('{0}', tidJson.tid), {json: true});
       var seasonYear = json.debug.setup_year;
       json = json.leaderboard;
       var tid = json.tournament_id;
