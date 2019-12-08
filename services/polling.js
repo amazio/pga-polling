@@ -64,9 +64,10 @@ async function doPoll() {
 }
 
 function updateSubscribers(tourney) {
+  var promises = [];
   settings.subscriptions.forEach(sub => {
     var subDoc = settings.subscriptions.id(sub._id);
-    request({
+    promises.push(request({
       uri: sub.postUrl,
       method: 'POST',
       json: true,
@@ -77,8 +78,9 @@ function updateSubscribers(tourney) {
       subDoc.errorCount++;
       subDoc.lastErrorMsg = e;
       subDoc.lastErrorDate = new Date();
-    }).finally(function() {
-      settings.save();
-    });
+    }));
+  });
+  Promise.all(promises).then(async function() {
+    await settings.save();
   });
 }
