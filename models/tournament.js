@@ -46,7 +46,7 @@ const tournamentSchema = new Schema({
 });
 
 tournamentSchema.methods.getTourneyState = function() {
-  if (this.isStarted && this.isFinished) return 'betweenTourneys';
+  if (!this.isStarted || (this.isStarted && this.isFinished)) return 'betweenTourneys';
   if (this.isStarted && !this.isFinished && (this.roundState === 'Official')) return 'waitingToStart';
   var today = new Date().toISOString().substring(0, 10); // 'YYYY-MM-DD'
   if (!this.isStarted && (this.startDate === today)) return 'waitingToStart';
