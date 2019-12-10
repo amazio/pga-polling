@@ -4,14 +4,14 @@ const Schema = mongoose.Schema;
 const holeSchema = new Schema({
   strokes: {type: Number, default: null},
   par: {type: Number, default: null}
-});
+}, {_id: false});
 
 const roundSchema = new Schema({
   num: Number,
   strokes: {type: Number, default: null},
   teeTime: {type: Date, default: null},
   holes: [holeSchema]
-});
+}, {_id: false});
 
 const playerSchema = new Schema({
   name: String,
@@ -25,7 +25,7 @@ const playerSchema = new Schema({
   total: {type: Number, default: 0},
   moneyEvent: Number,
   rounds: [roundSchema]
-});
+}, {_id: false});
 
 const tournamentSchema = new Schema({
   tid: String,
