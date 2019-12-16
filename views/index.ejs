@@ -22,6 +22,16 @@
 
 <section>
   <%= JSON.stringify(settings) %>
+
+  <dl>
+    <% var freq = Math.floor((new Date(settings.nextPoll) - new Date(settings.lastPollFinished)) / 1000) %>
+    <% var secs = freq % 60 %>
+    <% freq = Math.floor((freq - secs) / 60) %>
+    <% var mins = freq % 60 %>
+    <% var hrs = Math.floor((freq - mins) / 60) %>
+    <dt>Polling Frequency</dt>
+    <dd><%= hrs %> hrs <%= mins %> mins <%= secs %> secs</dd>
+  </dl>
 </section>
 
 <hr>
@@ -44,7 +54,6 @@
     <dd><%= tourney.roundState %></dd>
     <dt>Tourney State (<code>getTourneyState</code> on tourney doc)</dt>
     <dd><%= tourney.getTourneyState() %></dd>
-  </dl>
 </section>
 
 <hr>
