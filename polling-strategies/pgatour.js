@@ -10,7 +10,7 @@ module.exports = {
 };
 
 function poll() {
-  return new Promise(async function(resolve) {
+  return new Promise(async function(resolve, reject) {
     var wasUpdated = null;
     try {
       var tidJson = await request(URL_TID, {json: true});
@@ -51,8 +51,7 @@ function poll() {
         tourney
       });
     } catch(err) {
-      console.log('Error when polling within pgatour strategy...', err);
-      resolve({wasUpdated: false, tourney});
+      reject(err);
     }
   });
 }

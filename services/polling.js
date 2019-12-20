@@ -50,18 +50,29 @@ async function getStrategies() {
 }
 
 async function doPoll(forceUpdate) {
+  var nextPollMs;
   if (!settings.pollingActive) {
     if (timerId) clearTimeout(timerId);
     return;
   }
   settings.lastPollStarted = new Date();
-  var {tourney, wasUpdated} = await strategy.poll();
-  settings.lastPollFinished = new Date();
-  var nextPollMs = pollTimes[tourney.getTourneyState()];
-  settings.nextPoll = new Date(Date.now() + nextPollMs);
-  timerId = setTimeout(doPoll, nextPollMs);
-  await settings.save();
-  if (wasUpdated || forceUpdate) updateSubscribers(tourney);
+  try {
+    var {tourney, wasUpdated} = await strategy.poll();
+    if (wasUpdated || forceUpdate) updateSubscribers(tourney);
+    nextPollMs = pollTimes[tourney.getTourneyState()];
+    settings.recentPollError = '';
+    settings.noTourneyAvailable = false;
+    settings.nextPoll = new Date(Date.now() + nextPollMs);
+  } catch (err) {
+    settings.recentPollError = err.message;
+    settings.noTourneyAvailable = true;
+    nextPollMs = pollTimes['betweenTourneys'];
+    settings.nextPoll = new Date(Date.now() + nextPollMs);
+  } finally {
+    settings.lastPollFinished = new Date();
+    timerId = setTimeout(doPoll, nextPollMs);
+    await settings.save();
+  }
 }
 
 function updateSubscribers(tourney) {

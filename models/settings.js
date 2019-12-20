@@ -21,7 +21,9 @@ const settingsSchema = new Schema({
   lastPollStarted: Date,
   lastPollFinished: Date,
   nextPoll: Date,
-  subscriptions: [subscriptionSchema]
+  subscriptions: [subscriptionSchema],
+  noTourneyAvailable: {type: Boolean, default: false},
+  recentPollError: Schema.Types.Mixed
 }, {
   timestamps: true
 });
