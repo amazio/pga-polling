@@ -1,8 +1,5 @@
+const URL_FOR_GETTING_CURRENT_TOURNEY = 'https://flashscore.com/golf';
 
-const URL_TID = 'https://statdata.pgatour.com/r/current/message.json';
-const URL_TEMPLATE = 'https://statdata.pgatour.com/r/{0}/leaderboard-v2.json';
-
-var request = require('request-promise-native');
 var Tournament = require('../models/tournament');
 
 module.exports = {
