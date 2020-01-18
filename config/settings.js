@@ -31,6 +31,7 @@ async function load() {
   });
 } 
 
-function getCurrent() {
+async function getCurrent() {
+  const settings = await load();
   return settings;
 }

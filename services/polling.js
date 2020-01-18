@@ -1,81 +1,46 @@
 var path = require('path');
-var fs = require('fs');
 var request = require('request-promise-native');
-var pollTimes = require('../config/tourney-state-poll-times');
 
 const STRATEGY_DIR = path.join(__dirname, '..', 'polling-strategies');
 
 var settings;
-var timerId;
 var strategy;
 
 module.exports = {
   load,
-  doPoll,
   startPolling,  // accesible via HTTP request as well
   stopPolling    // accesible via HTTP request as well
 };
 
-function load() {
-  settings = require('../config/settings').getCurrent();
-  if (settings.pollingActive) startPolling();
+// Bootstrap polling - called once by server.js
+async function load() {
+  settings = await require('../config/settings').getCurrent();
+  strategy = require(`${STRATEGY_DIR}/${settings.pollingStrategy}`);
+  if (settings.pollingActive) strategy.startPolling(updateSubscribersCallback);
 }
 
+// Called if settings.pollingActive & via web page HTTP request
 async function startPolling(req, res) {
-  strategy = require(`${STRATEGY_DIR}/${settings.pollingStrategy}`);
-  if (timerId) clearTimeout(timerId);
-  settings.pollingActive = true;
-  await settings.save();
-  doPoll();
-  console.log('Polling started');
+  if (!settings.pollingActive) {
+    settings.pollingActive = true;
+    await settings.save();
+    strategy.startPolling(updateSubscribersCallback);
+    console.log('Polling started');
+  }
   if (res) res.redirect('/');
 }
 
+// Called via web page HTTP request to stop polling
 async function stopPolling(req, res) {
-  if (timerId) clearTimeout(timerId);
   settings.pollingActive = false;
   await settings.save();
+  strategy.stopPolling();
   console.log('Polling stopped');
   if (res) res.redirect('/');
 }
 
-async function getStrategies() {
-  return new Promise(function(resolve, reject) {
-    fs.readdir(STRATEGY_DIR, function(err, files) {
-      if (err) return reject(err);
-      files = files.map(f => f.replace('.js', ''));
-      resolve(files);
-    });
-  });
-}
-
-async function doPoll(forceUpdate) {
-  var nextPollMs;
-  if (!settings.pollingActive) {
-    if (timerId) clearTimeout(timerId);
-    return;
-  }
-  settings.lastPollStarted = new Date();
-  try {
-    var {tourney, wasUpdated} = await strategy.poll();
-    if (wasUpdated || forceUpdate) updateSubscribers(tourney);
-    nextPollMs = pollTimes[tourney.getTourneyState()];
-    settings.recentPollError = '';
-    settings.noTourneyAvailable = false;
-    settings.nextPoll = new Date(Date.now() + nextPollMs);
-  } catch (err) {
-    settings.recentPollError = err.message;
-    settings.noTourneyAvailable = true;
-    nextPollMs = pollTimes['betweenTourneys'];
-    settings.nextPoll = new Date(Date.now() + nextPollMs);
-  } finally {
-    settings.lastPollFinished = new Date();
-    timerId = setTimeout(doPoll, nextPollMs);
-    await settings.save();
-  }
-}
-
-function updateSubscribers(tourney) {
+// Passed to polling strategy and invoked with updated tourney doc
+function updateSubscribersCallback(tourney) {
   var promises = [];
   settings.subscriptions.forEach(sub => {
     var subDoc = settings.subscriptions.id(sub._id);
