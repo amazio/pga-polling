@@ -28,9 +28,9 @@ const playerSchema = new Schema({
 }, {_id: false});
 
 const tournamentSchema = new Schema({
-  tid: String,
-  seasonYear: String,
-  name: String,
+  title: String,
+  year: String,
+  purse: {type: Number, default: 0},
   lastUpdated: Date,
   startDate: String,
   endDate: String,
@@ -38,8 +38,6 @@ const tournamentSchema = new Schema({
   isFinished: Boolean,
   curRound: Number,
   roundState: String,
-  inPlayoff: Boolean,
-  cutCount: Number,
   leaderboard: [playerSchema]
 }, {
   timestamps: true
@@ -53,8 +51,10 @@ tournamentSchema.methods.getTourneyState = function() {
   return 'roundStarted';
 };
 
-tournamentSchema.statics.findByTourneyId = function(tid, seasonYear) {
-  return this.findOne({tid, seasonYear});
+tournamentSchema.statics.findByTitleAndYear = async function(title, year) {
+  let doc = await this.findOne({title, year});
+  if (!doc) doc = await this.create({title, year});
+  return doc;
 }
 
 module.exports = mongoose.model('Tournament', tournamentSchema);
