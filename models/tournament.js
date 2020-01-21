@@ -18,11 +18,10 @@ const playerSchema = new Schema({
   playerId: String,
   isAmateur: {type: Boolean, default: false},
   curPosition: {type: String, default: ''},
-  curRound: {type: Number, default: 1},
   backNine: {type: Boolean, default: false},
-  thru: {type: Number, default: null},
-  today: {type: Number, default: null},
-  total: {type: Number, default: 0},
+  thru: {type: String, default: null},
+  today: {type: String, default: null},
+  total: {type: String, default: 0},
   moneyEvent: Number,
   rounds: [roundSchema]
 }, {_id: false});
@@ -31,7 +30,6 @@ const tournamentSchema = new Schema({
   title: String,
   year: String,
   purse: {type: Number, default: 0},
-  lastUpdated: Date,
   startDate: String,
   endDate: String,
   isStarted: Boolean,
