@@ -45,11 +45,10 @@ async function stopPolling() {
     clearTimeout(timerId);
     timerId = null;
   }
+  savePrevLb = null;
   scorecardPages = {};
   await browser.close();
 }
-
-
 
 /*--- scraping functions ---*/
 
@@ -68,6 +67,11 @@ async function poll(tourneyDoc) {
     // Update tourney doc in this block and notify if changes
     await updateStats(tourneyDoc, lbPage);
     const newLb = await buildLb(lbPage);
+    // newLb gets modified, which modifies savePrevLb too (due to same ref)
+    if (savePrevLb) savePrevLb = savePrevLb.map(p => {
+      delete p.rounds;
+      return p;
+    });
     if (JSON.stringify(newLb) !== JSON.stringify(savePrevLb)) {
       savePrevLb = newLb;
       await updateTourneyLb(tourneyDoc, newLb);
@@ -94,8 +98,22 @@ async function updateStats(tourneyDoc, lbPage) {
       return {startDate, endDate};
     }
 
+    /*
+      potential status values:
+      - blank: Before tourney starts
+      - "finished": Tourney has ended
+    */
     const status = document.querySelector('.event__startTime').textContent;
     // TODO use status to compute curRound, roundState, isStarted, isFinished & roundState (isStarted & finished might need additional logic)
+    let isStarted, isFinished, curRound, roundState;
+    switch (status) {
+      case '':
+        isStarted = isFinished = false;
+        break;
+      case 'Finished':
+        isStarted = isFinished = true;
+        break;
+    }
     let datesStr = document.querySelector('.event__header--info span:first-child').textContent;
     // TODO take apart datesStr for startDate & endDate
     const {startDate, endDate} = getStartAndEndDates(datesStr);
@@ -132,59 +150,63 @@ async function buildLb(lbPage) {
     });
     return lb;
   });
-
-  // Replaces tourneyDoc.leaderboard with new computed lb
-
-
-  // const playerSchema = new Schema({
-  //   name: String,
-  //   playerId: String,
-  //   isAmateur: {type: Boolean, default: false},
-  //   curPosition: {type: String, default: ''},
-  //   curRound: {type: Number, default: 1},
-  //   backNine: {type: Boolean, default: false},
-  //   thru: {type: Number, default: null},
-  //   today: {type: Number, default: null},
-  //   total: {type: Number, default: 0},
-  //   moneyEvent: Number,
-  //   rounds: [roundSchema]
-  // }, {_id: false});
-
   return leaderboard;
 }
 
+// Replaces tourneyDoc.leaderboard with new computed lb
 async function updateTourneyLb(tourneyDoc, lb) {
+  // TODO: remove log
+  console.log('Entered: updateTourneyLb')
+
   const docLb = tourneyDoc.leaderboard;
-  const promises = [];
-  // TODO
   // For each player in lb:
   for (lbPlayer of lb) {
     // Find player obj in tourneyDoc.leaderboard
     const docPlayer = docLb.find(docPlayer => docPlayer.playerId === lbPlayer.playerId);
     if (docPlayer && docPlayer.thru === lbPlayer.thru) {
       // Copy docPlayer's rounds to lb player obj
-      
-    } else if (docPlayer && docPlayer.thru !== lbPlayer.thru) {
-      // Copy docPlayer's rounds to lb player obj
-      // Create scorecardPage if one does not exist
-      // Update current round from scorecardPage
-
+      lbPlayer.rounds = docPlayer.rounds;
     } else {
-      // Player does not exist - open scorecardPage for player
-      const promise = getScorecardPage(lbPlayer.playerId);
-      promises.push(promise);
-
-console.log(promises.length);
-
-      const page = await promise;
-      scorecardPages[lbPlayer.playerId] = page;
-      // Build rounds on lb player obj
+      // Ensure scorecardPage exists for player
+      if (!scorecardPages[lbPlayer.playerId]) {
+        var page = await getScorecardPage(lbPlayer.playerId);
+        scorecardPages[lbPlayer.playerId] = page;
+      }
+      // Build/re-build rounds on lbPlayer
+      await buildRounds(lbPlayer, page);
     }
   }
   // Replace tourneyDoc.leaderboard with lb
   tourneyDoc.leaderboard = lb;
-  // Compute moneyEvent
-  return Promise.all(promises);
+  // TODO: Compute moneyEvent
+  return;
+}
+
+async function buildRounds(lbPlayer, scorecardPage) {
+
+  // TODO: remove log
+  console.log('Entered: buildRounds')
+  // num: Number,
+  // strokes: {type: Number, default: null},
+  // teeTime: {type: Date, default: null},
+  // holes: [holeSchema]
+
+  // const holeSchema = new Schema({
+  //   strokes: {type: Number, default: null},
+  //   par: {type: Number, default: null}
+  // }, {_id: false});
+
+  try {
+    const rounds = await scorecardPage.$eval('table#parts', function(table) {
+      // TODO - testing
+      // TODO - determine what to do with tee times - remove from model?
+      return [{num: 1, strokes: 69, holes: [{strokes: 3, par: 3}, {strokes: 5, par: 4}, {strokes: 4, par: 5}]}];
+    });
+    lbPlayer.rounds = rounds;
+  } catch {
+    // No rounds yet
+    return;
+  }
 }
 
 async function getLbTitleAndYear(lbPage) {
@@ -219,9 +241,9 @@ async function getLbPage() {
   let text = await page.evaluate(el => el.innerHTML, li);
   const href = text.match(/href="(\/golf\/pga-tour\/[^/]+\/)"/);
 
-  //TODO - DEBUGGING
-  // await page.goto(`https://www.flashscore.com/golf/pga-tour/the-american-express/`, {waitUntil: 'domcontentloaded'});
-  await page.goto(`${HOST}${href[1]}`, {waitUntil: 'domcontentloaded'});
+  // FOR DEBUGGING PURPOSES
+  await page.goto(`https://www.flashscore.com/golf/pga-tour/the-american-express/`, {waitUntil: 'domcontentloaded'});
+  // await page.goto(`${HOST}${href[1]}`, {waitUntil: 'domcontentloaded'});
   await page.waitForSelector('.event__match--last');
   return page;
 }
