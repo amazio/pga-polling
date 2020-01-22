@@ -174,6 +174,9 @@ async function updateTourneyLb(tourneyDoc, lb) {
       }
       // Build/re-build rounds on lbPlayer
       await buildRounds(lbPlayer, page);
+      // Determine if backNine
+      const lastRoundHoles = lbPlayer.lbPlayer.rounds.length && lbPlayer.rounds[lbPlayer.rounds - 1].holes;
+      if (lastRoundHoles) lbPlayer.backNine = lastRoundHoles[0].strokes === 0 && lastRoundHoles[17].strokes !== 0;
     }
   }
   // Replace tourneyDoc.leaderboard with lb
@@ -191,11 +194,6 @@ async function buildRounds(lbPlayer, scorecardPage) {
   // teeTime: {type: Date, default: null},
   // holes: [holeSchema]
 
-  // const holeSchema = new Schema({
-  //   strokes: {type: Number, default: null},
-  //   par: {type: Number, default: null}
-  // }, {_id: false});
-
   try {
     const rounds = await scorecardPage.$eval('table#parts', function(table) {
       // TODO - determine what to do with tee times - remove from model?
@@ -208,7 +206,7 @@ async function buildRounds(lbPlayer, scorecardPage) {
         rounds.push({
           num: roundIdx,
           strokes: strokes.includes(0) ? null : strokes.reduce((acc, score) => acc + parseInt(score), 0),
-          holes: pars.map((par, holeIdx) => {par, strokes, strokes[holeIdx]})
+          holes: pars.map((par, holeIdx) => ({par, strokes: strokes[holeIdx]}))
         });
       }
       return rounds;
