@@ -166,7 +166,7 @@ async function updateTourneyLb(tourneyDoc, lb) {
     if (docPlayer && docPlayer.thru === lbPlayer.thru) {
       // Copy docPlayer's rounds to lb player obj
       lbPlayer.rounds = docPlayer.rounds;
-    } else {
+    } else if (tourneyDoc.isStarted) {
       // Ensure scorecardPage exists for player
       if (!scorecardPages[lbPlayer.playerId]) {
         var page = await getScorecardPage(lbPlayer.playerId);
@@ -175,7 +175,7 @@ async function updateTourneyLb(tourneyDoc, lb) {
       // Build/re-build rounds on lbPlayer
       await buildRounds(lbPlayer, page);
       // Determine if backNine
-      const lastRoundHoles = lbPlayer.lbPlayer.rounds.length && lbPlayer.rounds[lbPlayer.rounds - 1].holes;
+      const lastRoundHoles = lbPlayer.rounds && lbPlayer.lbPlayer.rounds.length && lbPlayer.rounds[lbPlayer.rounds - 1].holes;
       if (lastRoundHoles) lbPlayer.backNine = lastRoundHoles[0].strokes === 0 && lastRoundHoles[17].strokes !== 0;
     }
   }
@@ -251,8 +251,8 @@ async function getLbPage() {
   const href = text.match(/href="(\/golf\/pga-tour\/[^/]+\/)"/);
 
   // FOR DEBUGGING PURPOSES
-  await page.goto(`https://www.flashscore.com/golf/pga-tour/the-american-express/`, {waitUntil: 'domcontentloaded'});
-  // await page.goto(`${HOST}${href[1]}`, {waitUntil: 'domcontentloaded'});
+  // await page.goto(`https://www.flashscore.com/golf/pga-tour/the-american-express/`, {waitUntil: 'domcontentloaded'});
+  await page.goto(`${HOST}${href[1]}`, {waitUntil: 'domcontentloaded'});
   await page.waitForSelector('.event__match--last');
   return page;
 }
