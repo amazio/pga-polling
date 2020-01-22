@@ -185,7 +185,7 @@ async function updateTourneyLb(tourneyDoc, lb) {
 async function buildRounds(lbPlayer, scorecardPage) {
 
   // TODO: remove log
-  console.log('Entered: buildRounds')
+  console.log(`Entered: buildRounds for ${lbPlayer.name} (${lbPlayer.playerId})`)
   // num: Number,
   // strokes: {type: Number, default: null},
   // teeTime: {type: Date, default: null},
@@ -198,14 +198,25 @@ async function buildRounds(lbPlayer, scorecardPage) {
 
   try {
     const rounds = await scorecardPage.$eval('table#parts', function(table) {
-      // TODO - testing
       // TODO - determine what to do with tee times - remove from model?
-      return [{num: 1, strokes: 69, holes: [{strokes: 3, par: 3}, {strokes: 5, par: 4}, {strokes: 4, par: 5}]}];
+      const rounds = [];
+      const theads = table.querySelectorAll('thead');
+      const tbodys = table.querySelectorAll('tbody');
+      for (let roundIdx = 1; roundIdx <= theads.length; roundIdx++) {
+        const pars = Array.from(theads[roundIdx - 1].querySelectorAll('tr.golf-par-row td')).map(td => parseInt(td.textContent));
+        const strokes = Array.from(tbodys[roundIdx - 1].querySelectorAll('td')).map(td => parseInt(td.textContent || 0));
+        rounds.push({
+          num: roundIdx,
+          strokes: strokes.includes(0) ? null : strokes.reduce((acc, score) => acc + parseInt(score), 0),
+          holes: pars.map((par, holeIdx) => {par, strokes, strokes[holeIdx]})
+        });
+      }
+      return rounds;
     });
     lbPlayer.rounds = rounds;
   } catch {
     // No rounds yet
-    return;
+    return [];
   }
 }
 

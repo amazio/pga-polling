@@ -3,7 +3,7 @@ let settings;
   settings = await require('../config/settings').getCurrent();
 })();
 
-exports.updateSubscribersCallback = function(tourney) {
+exports.updateSubscribersCallback = function(tourneyDoc) {
   var promises = [];
   settings.subscriptions.forEach(sub => {
     var subDoc = settings.subscriptions.id(sub._id);
@@ -11,7 +11,7 @@ exports.updateSubscribersCallback = function(tourney) {
       uri: sub.postUrl,
       method: 'POST',
       json: true,
-      body: tourney
+      body: tourneyDoc
     }).then(function() {
       subDoc.lastUpdated = new Date();
     }).catch(function(e){
