@@ -90,7 +90,7 @@ function updatePayouts(newLb, purse) {
   // If breakdown are percentages, convert to dollars
   if (payoutBreakdown.pct) breakdown = breakdown.map(pct => Math.round(pct * purse));
   let pIdx = 0;
-  let maxLen = Math.max(newLb.length, breakdown.length);
+  let maxLen = Math.min(newLb.length, breakdown.length);
   // Verify that the player has started the tourney
   while (newLb[pIdx] && newLb[pIdx].curPosition && pIdx < maxLen) {
     let playerCount = 1;
@@ -98,7 +98,7 @@ function updatePayouts(newLb, purse) {
     while (newLb[pIdx].curPosition && newLb[pIdx].curPosition === newLb[pIdx + 1].curPosition) {
       playerCount++;
       pIdx++;
-      moneySum += breakdown[pIdx];
+      moneySum += breakdown[pIdx] ? breakdown[pIdx] : 0;
     }
     for (let i = playerCount; i > 0; i--) {
       newLb[pIdx + 1 - i].moneyEvent = Math.round(moneySum / playerCount);
@@ -174,8 +174,9 @@ async function buildLb(lbPage) {
     let playerEls = document.querySelectorAll('div.sportName.golf div.event__match[id]');
     const lb = Array.from(playerEls).map(pEl => {
       const resultEls = pEl.querySelectorAll('.event__result');
+      let name = pEl.querySelector('.event__participant').childNodes[1].nodeValue;
       return {
-        name: pEl.querySelector('.event__participant').textContent,
+        name,
         playerId: pEl.id.slice(pEl.id.lastIndexOf('_') + 1),
         // TODO isAmateur
         curPosition: pEl.querySelector('.event__rating').textContent,
@@ -205,8 +206,12 @@ async function updateTourneyLb(tourneyDoc, newLb) {
     } else if (tourneyDoc.isStarted) {
       // Ensure scorecardPage exists for player
       if (!scorecardPages[lbPlayer.playerId]) {
-        var page = await getScorecardPage(lbPlayer.playerId);
-        scorecardPages[lbPlayer.playerId] = page;
+        try {
+          var page = await getScorecardPage(lbPlayer.playerId);
+          scorecardPages[lbPlayer.playerId] = page;
+        } catch (e) {
+          console.log(e);
+        }
       }
       // Build/re-build rounds on lbPlayer
       await buildRounds(lbPlayer, page);
