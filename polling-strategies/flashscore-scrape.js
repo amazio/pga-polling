@@ -76,7 +76,8 @@ async function poll(tourneyDoc) {
     }
     if (tourneyDoc.isModified()) {
       // TODO: remove log
-      console.log('Savings tourneyDoc', tourneyDoc.leaderboard[0]);
+      console.log('Saving tourneyDoc');
+      console.log(process.memoryUsage());
       await tourneyDoc.save();
       updateSubscribersCallback(tourneyDoc);
     }
@@ -213,7 +214,7 @@ async function updateTourneyLb(tourneyDoc, newLb) {
         }
       }
       // Build/re-build rounds on lbPlayer
-      await buildRounds(lbPlayer, page);
+      if (page) await buildRounds(lbPlayer, page);
       // Determine if backNine
       const lastRoundHoles = lbPlayer.rounds && lbPlayer.rounds.length && lbPlayer.rounds[lbPlayer.rounds.length - 1].holes;
       if (lastRoundHoles) lbPlayer.backNine = lastRoundHoles[0].strokes === 0 && lastRoundHoles[17].strokes !== 0;
