@@ -1,3 +1,4 @@
+const fs = require('fs');
 const pup = require('puppeteer');
 
 const HOST = 'https://flashscore.com';
@@ -11,6 +12,7 @@ let browser;
 let lbPage;  // Holds https://www.flashscore.com/golf/pga-tour/{current tourney name}/
 let scorecardPages;  // Holds the player scorecard pages using the playerId as keys.
 let savePrevLb;  // Cache the previous lb so that we can compare new lb and see if something has changed
+let payoutBreakdown;
 let timerId;
 let saveDate;  // Used to reload each new day
 
@@ -35,6 +37,7 @@ async function startPolling() {
   [lbData.title, lbData.year] = await getLbTitleAndYear(lbPage);
   scorecardPages = {};
   tourneyDoc = await Tournament.findByTitleAndYear(lbData.title, lbData.year);
+  payoutBreakdown = require(tourneyDoc.payoutPath);
   await poll(tourneyDoc);
   console.log(process.memoryUsage());
 }
@@ -67,22 +70,41 @@ async function poll(tourneyDoc) {
     // Update tourney doc in this block and notify if changes
     await updateStats(tourneyDoc, lbPage);
     const newLb = await buildLb(lbPage);
-    // newLb gets modified, which modifies savePrevLb too (due to same ref)
-    if (savePrevLb) savePrevLb = savePrevLb.map(p => {
-      delete p.rounds;
-      return p;
-    });
-    if (JSON.stringify(newLb) !== JSON.stringify(savePrevLb)) {
-      savePrevLb = newLb;
+    if (JSON.stringify(newLb) !== savePrevLb) {
+      savePrevLb = JSON.stringify(newLb);
       await updateTourneyLb(tourneyDoc, newLb);
     }
     if (tourneyDoc.isModified()) {
+      // TODO: remove log
+      console.log('Savings tourneyDoc');
       await tourneyDoc.save();
       updateSubscribersCallback(tourneyDoc);
     }
   }
   timerId = setTimeout(() => poll(tourneyDoc), 5000);
   return;
+}
+
+function updatePayouts(newLb, purse) {
+  let breakdown = payoutBreakdown.breakdown;
+  // If breakdown are percentages, convert to dollars
+  if (payoutBreakdown.pct) breakdown = breakdown.map(pct => Math.round(pct * purse));
+  let pIdx = 0;
+  let maxLen = Math.max(newLb.length, breakdown.length);
+  // Verify that the player has started the tourney
+  while (newLb[pIdx] && newLb[pIdx].curPosition && pIdx < maxLen) {
+    let playerCount = 1;
+    let moneySum = breakdown[pIdx];
+    while (newLb[pIdx].curPosition && newLb[pIdx].curPosition === newLb[pIdx + 1].curPosition) {
+      playerCount++;
+      pIdx++;
+      moneySum += breakdown[pIdx];
+    }
+    for (let i = playerCount; i > 0; i--) {
+      newLb[pIdx + 1 - i].moneyEvent = Math.round(moneySum / playerCount);
+    }
+    pIdx++;
+  }
 }
 
 // Returns true if any of the tourney's stats changed
@@ -102,8 +124,12 @@ async function updateStats(tourneyDoc, lbPage) {
       potential status values:
       - blank: Before tourney starts
       - "finished": Tourney has ended
+      - "Start time: DD.MM. HH:MM"
+      - "Round x"
     */
-    const status = document.querySelector('.event__startTime').textContent;
+    let status = document.querySelector('.event__startTime').textContent;
+    // Tourney hasn't started first round yet
+    if (status.startsWith('Start time')) status = '';
     // TODO use status to compute curRound, roundState, isStarted, isFinished & roundState (isStarted & finished might need additional logic)
     let isStarted, isFinished, curRound, roundState;
     switch (status) {
@@ -113,9 +139,19 @@ async function updateStats(tourneyDoc, lbPage) {
       case 'Finished':
         isStarted = isFinished = true;
         break;
+      default:
+        isStarted = true;
+        isFinished = false;
     }
+    // TODO: Not sure if the following will work when the round is suspended, etc.
+    if (status.includes('Round')) {
+      curRound = parseInt(status.match(/Round (\d)/)[1]);
+      // TODO: still need to figure out  roundState
+      roundState = 'In Progress';
+    } 
+
+
     let datesStr = document.querySelector('.event__header--info span:first-child').textContent;
-    // TODO take apart datesStr for startDate & endDate
     const {startDate, endDate} = getStartAndEndDates(datesStr);
     let purse = document.querySelector('.event__header--info span:nth-child(3)').textContent;
     purse = purse.slice(purse.lastIndexOf('$') + 1).replace(/[^\d]/g, '');
@@ -123,10 +159,10 @@ async function updateStats(tourneyDoc, lbPage) {
       purse,
       startDate,
       endDate,
-      // isStarted,
-      // isFinished,
-      // curRound,
-      // roundState
+      isStarted,
+      isFinished,
+      curRound,
+      roundState
     };
   });
   // Update tourney doc (if nothing actually changes, isModified will still be false)
@@ -154,13 +190,13 @@ async function buildLb(lbPage) {
 }
 
 // Replaces tourneyDoc.leaderboard with new computed lb
-async function updateTourneyLb(tourneyDoc, lb) {
+async function updateTourneyLb(tourneyDoc, newLb) {
   // TODO: remove log
   console.log('Entered: updateTourneyLb')
 
   const docLb = tourneyDoc.leaderboard;
   // For each player in lb:
-  for (lbPlayer of lb) {
+  for (lbPlayer of newLb) {
     // Find player obj in tourneyDoc.leaderboard
     const docPlayer = docLb.find(docPlayer => docPlayer.playerId === lbPlayer.playerId);
     if (docPlayer && docPlayer.thru === lbPlayer.thru) {
@@ -175,13 +211,13 @@ async function updateTourneyLb(tourneyDoc, lb) {
       // Build/re-build rounds on lbPlayer
       await buildRounds(lbPlayer, page);
       // Determine if backNine
-      const lastRoundHoles = lbPlayer.rounds && lbPlayer.lbPlayer.rounds.length && lbPlayer.rounds[lbPlayer.rounds - 1].holes;
+      const lastRoundHoles = lbPlayer.rounds && lbPlayer.rounds.length && lbPlayer.rounds[lbPlayer.rounds.length - 1].holes;
       if (lastRoundHoles) lbPlayer.backNine = lastRoundHoles[0].strokes === 0 && lastRoundHoles[17].strokes !== 0;
     }
   }
-  // Replace tourneyDoc.leaderboard with lb
-  tourneyDoc.leaderboard = lb;
-  // TODO: Compute moneyEvent
+  if (tourneyDoc.isStarted) updatePayouts(newLb, tourneyDoc.purse);
+  // Replace tourneyDoc.leaderboard with newLb
+  tourneyDoc.leaderboard = newLb;
   return;
 }
 
@@ -226,7 +262,6 @@ async function getLbTitleAndYear(lbPage) {
   return [title.trim(), year.trim()];
 }
 
-
 /*--- database functions ---*/
 
 
@@ -263,90 +298,3 @@ async function getNewEmptyPage() {
   page.setUserAgent = USER_AGENT;
   return page;
 }
-
-// async function doPoll(forceUpdate) {
-//   var nextPollMs;
-//   if (!settings.pollingActive) {
-//     if (timerId) clearTimeout(timerId);
-//     return;
-//   }
-//   settings.lastPollStarted = new Date();
-//   try {
-//     var {tourney, wasUpdated} = await strategy.poll();
-//     if (wasUpdated || forceUpdate) updateSubscribers(tourney);
-//     nextPollMs = pollTimes[tourney.getTourneyState()];
-//     settings.recentPollError = '';
-//     settings.noTourneyAvailable = false;
-//     settings.nextPoll = new Date(Date.now() + nextPollMs);
-//   } catch (err) {
-//     settings.recentPollError = err.message;
-//     settings.noTourneyAvailable = true;
-//     nextPollMs = pollTimes['betweenTourneys'];
-//     settings.nextPoll = new Date(Date.now() + nextPollMs);
-//   } finally {
-//     settings.lastPollFinished = new Date();
-//     timerId = setTimeout(doPoll, nextPollMs);
-//     await settings.save();
-//   }
-// }
-
-// async function updateTourney(tourney, json) {
-//   tourney.isStarted = json.is_started;
-//   tourney.isFinished = json.is_finished;
-//   tourney.curRound = json.current_round;
-//   tourney.roundState = json.round_state;
-//   tourney.inPlayoff = json.in_playoff;
-//   tourney.leaderboard = buildLeaderboard(tourney, json.players);
-//   await tourney.save();
-// }
-
-// function buildLeaderboard(tourney, players) {
-//   return players.map(p => ({
-//     name: `${p.player_bio.first_name} ${p.player_bio.last_name}`,
-//     playerId: p.player_id,
-//     isAmateur: p.player_bio.is_amateur,
-//     curPosition: p.current_position,
-//     curRound: p.current_round,
-//     backNine: p.back9,
-//     thru: p.thru,
-//     today: p.today,
-//     total: p.total,
-//     moneyEvent: p.rankings.projected_money_event,
-//     rounds: buildRounds(tourney, p)
-//   }));
-// }
-
-// function buildRounds(tourney, player) {
-//   var rounds;
-//   var curRoundNum = player.current_round;
-//   // Get current player subdoc from tourney doc
-//   var playerDoc = tourney.leaderboard.find(p => p.playerId === player.player_id);
-//   // There will not be a player subdoc if this is the first poll for this tourney
-//   if (playerDoc) {
-//     rounds = tourney.leaderboard.find(p => p.playerId === player.player_id).rounds;
-//   } else {
-//     rounds = [];
-//   }
-//   var pollRound = player.rounds[curRoundNum - 1];
-//   // Player might have missed cut, thus...
-//   if (!pollRound) return rounds;
-//   var roundDoc = rounds.find(r => r.num === curRoundNum);
-//   if (!roundDoc) {
-//     // Player does not yet have a subdoc for the current round
-//     rounds.push({num: curRoundNum});
-//     // Grab the just added round so that it can be "updated"
-//     roundDoc = rounds[rounds.length - 1];
-//   }
-//   // Update the round
-//   roundDoc.strokes = pollRound.strokes;
-//   roundDoc.teeTime = pollRound.tee_time;
-//   roundDoc.holes = buildHoles(player.holes);
-//   return rounds;
-// }
-
-// function buildHoles(holes) {
-//   return holes.map(h => ({
-//     strokes: h.strokes,
-//     par: h.par
-//   }));
-// }

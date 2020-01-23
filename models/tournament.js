@@ -30,10 +30,11 @@ const tournamentSchema = new Schema({
   title: String,
   year: String,
   purse: {type: Number, default: 0},
+  payoutPath: {type: String, default: '../payouts/payout-default-pct'},
   startDate: String,
   endDate: String,
-  isStarted: Boolean,
-  isFinished: Boolean,
+  isStarted: {type: Boolean, default: false},
+  isFinished: {type: Boolean, default: false},
   curRound: Number,
   roundState: String,
   leaderboard: [playerSchema]
