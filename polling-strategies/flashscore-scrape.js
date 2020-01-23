@@ -76,7 +76,7 @@ async function poll(tourneyDoc) {
     }
     if (tourneyDoc.isModified()) {
       // TODO: remove log
-      console.log('Savings tourneyDoc');
+      console.log('Savings tourneyDoc', tourneyDoc.leaderboard[0]);
       await tourneyDoc.save();
       updateSubscribersCallback(tourneyDoc);
     }
@@ -194,7 +194,6 @@ async function buildLb(lbPage) {
 async function updateTourneyLb(tourneyDoc, newLb) {
   // TODO: remove log
   console.log('Entered: updateTourneyLb')
-
   const docLb = tourneyDoc.leaderboard;
   // For each player in lb:
   for (lbPlayer of newLb) {
