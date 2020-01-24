@@ -8,7 +8,7 @@ var pollingService = require('../services/polling');
 router.get('/', async function(req, res) {
   res.render('index', {
     settings: await Settings.findOne({}),
-    tourney: await Tournament.findOne().sort('-createdAt')
+    tourney: await Tournament.findOne().sort('-updatedAt').limit(1)
   });
 });
 
