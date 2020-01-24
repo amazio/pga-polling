@@ -172,6 +172,7 @@ async function buildLb(lbPage) {
       const resultEls = pEl.querySelectorAll('.event__result');
       let shortName = pEl.querySelector('.event__participant').childNodes[1].nodeValue;
       return {
+        // Temporary assign to name until scorecard provides full name 
         name: shortName,
         shortName,
         playerId: pEl.id.slice(pEl.id.lastIndexOf('_') + 1),
@@ -203,6 +204,8 @@ async function updateTourneyLb(tourneyDoc, newLb) {
       try {
         // Assign fullname that's available on the scorecard page
         lbPlayer.name = await gotoScorecardPage(lbPlayer.playerId);
+        // Add a comma after last name
+        lbPlayer.name = lbPlayer.name.replace(' ', ', ');
         // Build/re-build rounds on lbPlayer
         await buildRounds(lbPlayer, scorecardPage);
       } catch (e) {
