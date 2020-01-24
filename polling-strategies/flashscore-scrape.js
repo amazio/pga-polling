@@ -10,6 +10,7 @@ const updateSubscribersCallback = require('../services/notification').updateSubs
 let settings;
 let browser;
 let lbPage;  // Holds https://www.flashscore.com/golf/pga-tour/{current tourney name}/
+let scorecardPage;  // Use over and over to load scorecard page as needed (may replace below caching to save resources)
 let scorecardPages;  // Holds the player scorecard pages using the playerId as keys.
 let savePrevLb;  // Cache the previous lb so that we can compare new lb and see if something has changed
 let payoutBreakdown;
@@ -34,7 +35,9 @@ async function startPolling() {
   saveDate = new Date().getDate();
   browser = await pup.launch({headless: true});
   lbPage = await getLbPage();
+  scorecardPage = await getNewEmptyPage();
   [lbData.title, lbData.year] = await getLbTitleAndYear(lbPage);
+  // TODO: Remove the caching of pages to save resources?
   scorecardPages = {};
   tourneyDoc = await Tournament.findByTitleAndYear(lbData.title, lbData.year);
   payoutBreakdown = require(tourneyDoc.payoutPath);
@@ -49,6 +52,8 @@ async function stopPolling() {
     timerId = null;
   }
   savePrevLb = null;
+  scorecardPage = null;
+  // TODO:  Remove the following if not used anymore
   scorecardPages = {};
   await browser.close();
 }
@@ -205,16 +210,23 @@ async function updateTourneyLb(tourneyDoc, newLb) {
       lbPlayer.rounds = docPlayer.rounds;
     } else if (tourneyDoc.isStarted) {
       // Ensure scorecardPage exists for player
-      if (!scorecardPages[lbPlayer.playerId]) {
-        try {
-          var page = await getScorecardPage(lbPlayer.playerId);
-          scorecardPages[lbPlayer.playerId] = page;
-        } catch (e) {
-          console.log(e);
-        }
+      // TODO: Going to try to save resources by not caching
+      // if (!scorecardPages[lbPlayer.playerId]) {
+      //   try {
+      //     var page = await getScorecardPage(lbPlayer.playerId);
+      //     scorecardPages[lbPlayer.playerId] = page;
+      //   } catch (e) {
+      //     console.log(e);
+      //   }
+      // }
+      // TODO: Testing Reuse of scorecardPage
+      try {
+        await gotoScorecardPage(lbPlayer.playerId);
+        // Build/re-build rounds on lbPlayer
+        await buildRounds(lbPlayer, scorecardPage);
+      } catch (e) {
+        console.log(e);
       }
-      // Build/re-build rounds on lbPlayer
-      if (page) await buildRounds(lbPlayer, page);
       // Determine if backNine
       const lastRoundHoles = lbPlayer.rounds && lbPlayer.rounds.length && lbPlayer.rounds[lbPlayer.rounds.length - 1].holes;
       if (lastRoundHoles) lbPlayer.backNine = lastRoundHoles[0].strokes === 0 && lastRoundHoles[17].strokes !== 0;
@@ -267,12 +279,21 @@ async function getLbTitleAndYear(lbPage) {
 
 /*--- helper functions ---*/
 
+// TODO:  Remove this if not caching pages anymore
 async function getScorecardPage(playerId) {
   const URL_FOR_PLAYER_SCORECARD = `https://flashscore.com/match/${playerId}/p/#match-summary`;
   const page = await getNewEmptyPage();
   await page.goto(URL_FOR_PLAYER_SCORECARD, {waitUntil: 'networkidle0'});
   await page.waitForSelector('#tab-match-summary');
   return page;
+}
+
+// TODO:  Using this one to save resources
+async function gotoScorecardPage(playerId) {
+  const URL_FOR_PLAYER_SCORECARD = `https://flashscore.com/match/${playerId}/p/#match-summary`;
+  await scorecardPage.goto(URL_FOR_PLAYER_SCORECARD, {waitUntil: 'networkidle0'});
+  await scorecardPage.waitForSelector('#tab-match-summary');
+  return;
 }
 
 async function getLbPage() {
