@@ -261,9 +261,17 @@ async function getLbTitleAndYear(lbPage) {
 // Use the global scorecardPage to browse to a player's scorecard and return the fullname
 async function gotoScorecardPage(playerId) {
   const URL_FOR_PLAYER_SCORECARD = `https://flashscore.com/match/${playerId}/p/#match-summary`;
-  await scorecardPage.goto(URL_FOR_PLAYER_SCORECARD, {waitUntil: 'networkidle0'});
-  await scorecardPage.waitForSelector('#tab-match-summary');
-  const name = await scorecardPage.$eval('div.tname-participant a.participant-imglink', el => el.textContent);
+  let name;
+  try {
+    await scorecardPage.goto(URL_FOR_PLAYER_SCORECARD, {waitUntil: 'networkidle0'});
+    await scorecardPage.waitForSelector('#tab-match-summary');
+    name = await scorecardPage.$eval('div.tname-participant a.participant-imglink', el => el.textContent);
+  } catch (e) {
+    console.log('Error inside of gotoScorecardPage function', e);
+    scorecardPage.close();
+    scorecardPage = await getNewEmptyPage();
+    return await gotoScorecardPage(playerId);
+  }
   return name;
 }
 
