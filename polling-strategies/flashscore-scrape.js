@@ -207,8 +207,9 @@ async function updateTourneyLb(tourneyDoc, newLb) {
     // Find player obj in tourneyDoc.leaderboard
     const docPlayer = docLb.find(docPlayer => docPlayer.playerId === lbPlayer.playerId);
     if (docPlayer && docPlayer.thru === lbPlayer.thru) {
-      // Copy docPlayer's rounds to lb player obj
-      lbPlayer.rounds = docPlayer.rounds;
+      // Assign docPlayer to lbPlayer
+      const lbPlayerIdx = newLb.indexOf(lbPlayer);
+      newLb[lbPlayerIdx] = docPlayer;
     } else if (tourneyDoc.isStarted) {
       try {
         // Assign fullname & country that's available on the scorecard page
