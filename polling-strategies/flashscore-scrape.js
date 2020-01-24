@@ -1,4 +1,3 @@
-const fs = require('fs');
 const pup = require('puppeteer');
 
 const HOST = 'https://flashscore.com';
@@ -11,7 +10,6 @@ let settings;
 let browser;
 let lbPage;  // Holds https://www.flashscore.com/golf/pga-tour/{current tourney name}/
 let scorecardPage;  // Use over and over to load scorecard page as needed (may replace below caching to save resources)
-let scorecardPages;  // Holds the player scorecard pages using the playerId as keys.
 let savePrevLb;  // Cache the previous lb so that we can compare new lb and see if something has changed
 let payoutBreakdown;
 let timerId;
@@ -30,19 +28,15 @@ module.exports = {
 
 // Called by polling service to start polling - should re-init state
 async function startPolling() {
-  console.log(process.memoryUsage());
   settings = await require('../config/settings').getCurrent();
   saveDate = new Date().getDate();
   browser = await pup.launch({headless: true});
   lbPage = await getLbPage();
   scorecardPage = await getNewEmptyPage();
   [lbData.title, lbData.year] = await getLbTitleAndYear(lbPage);
-  // TODO: Remove the caching of pages to save resources?
-  scorecardPages = {};
   tourneyDoc = await Tournament.findByTitleAndYear(lbData.title, lbData.year);
   payoutBreakdown = require(tourneyDoc.payoutPath);
   await poll(tourneyDoc);
-  console.log(process.memoryUsage());
 }
 
 // Called by polling service to stop polling
@@ -53,8 +47,6 @@ async function stopPolling() {
   }
   savePrevLb = null;
   scorecardPage = null;
-  // TODO:  Remove the following if not used anymore
-  scorecardPages = {};
   await browser.close();
 }
 
@@ -82,7 +74,6 @@ async function poll(tourneyDoc) {
     if (tourneyDoc.isModified()) {
       // TODO: remove log
       console.log('Saving tourneyDoc');
-      console.log(process.memoryUsage());
       await tourneyDoc.save();
       updateSubscribersCallback(tourneyDoc);
     }
@@ -125,7 +116,6 @@ async function updateStats(tourneyDoc, lbPage) {
       const endDate = `${s.slice(-7, -5)}-${s.slice(-10, -8)}-${year}`;
       return {startDate, endDate};
     }
-
     /*
       potential status values:
       - blank: Before tourney starts
@@ -180,9 +170,11 @@ async function buildLb(lbPage) {
     let playerEls = document.querySelectorAll('div.sportName.golf div.event__match[id]');
     const lb = Array.from(playerEls).map(pEl => {
       const resultEls = pEl.querySelectorAll('.event__result');
-      let name = pEl.querySelector('.event__participant').childNodes[1].nodeValue;
+      let shortName = pEl.querySelector('.event__participant').childNodes[1].nodeValue;
+      let name = shortName;
       return {
         name,
+        shortName,
         playerId: pEl.id.slice(pEl.id.lastIndexOf('_') + 1),
         // TODO isAmateur
         curPosition: pEl.querySelector('.event__rating').textContent,
@@ -209,19 +201,9 @@ async function updateTourneyLb(tourneyDoc, newLb) {
       // Copy docPlayer's rounds to lb player obj
       lbPlayer.rounds = docPlayer.rounds;
     } else if (tourneyDoc.isStarted) {
-      // Ensure scorecardPage exists for player
-      // TODO: Going to try to save resources by not caching
-      // if (!scorecardPages[lbPlayer.playerId]) {
-      //   try {
-      //     var page = await getScorecardPage(lbPlayer.playerId);
-      //     scorecardPages[lbPlayer.playerId] = page;
-      //   } catch (e) {
-      //     console.log(e);
-      //   }
-      // }
-      // TODO: Testing Reuse of scorecardPage
       try {
-        await gotoScorecardPage(lbPlayer.playerId);
+        // Assign fullname that's available on the scorecard page
+        lbPlayer.name = await gotoScorecardPage(lbPlayer.playerId);
         // Build/re-build rounds on lbPlayer
         await buildRounds(lbPlayer, scorecardPage);
       } catch (e) {
@@ -266,10 +248,8 @@ async function buildRounds(lbPlayer, scorecardPage) {
 }
 
 async function getLbTitleAndYear(lbPage) {
-  let el = await lbPage.$('.teamHeader__info .teamHeader__name');
-  const title = await lbPage.evaluate(el => el.textContent, el);
-  el = await lbPage.$('.teamHeader__info .teamHeader__text');
-  const year = await lbPage.evaluate(el => el.textContent, el);
+  const title = await lbPage.$eval('.teamHeader__info .teamHeader__name', el => el.textContent);
+  const year = await lbPage.$eval('.teamHeader__info .teamHeader__text', el => el.textContent);
   return [title.trim(), year.trim()];
 }
 
@@ -279,21 +259,12 @@ async function getLbTitleAndYear(lbPage) {
 
 /*--- helper functions ---*/
 
-// TODO:  Remove this if not caching pages anymore
-async function getScorecardPage(playerId) {
-  const URL_FOR_PLAYER_SCORECARD = `https://flashscore.com/match/${playerId}/p/#match-summary`;
-  const page = await getNewEmptyPage();
-  await page.goto(URL_FOR_PLAYER_SCORECARD, {waitUntil: 'networkidle0'});
-  await page.waitForSelector('#tab-match-summary');
-  return page;
-}
-
-// TODO:  Using this one to save resources
+// Use the global scorecardPage to browse to a player's scorecard and return the fullname
 async function gotoScorecardPage(playerId) {
   const URL_FOR_PLAYER_SCORECARD = `https://flashscore.com/match/${playerId}/p/#match-summary`;
   await scorecardPage.goto(URL_FOR_PLAYER_SCORECARD, {waitUntil: 'networkidle0'});
   await scorecardPage.waitForSelector('#tab-match-summary');
-  return;
+  return await scorecardPage.$eval('a.participant-imglink', el => el.textContent);
 }
 
 async function getLbPage() {
@@ -301,10 +272,8 @@ async function getLbPage() {
   const page = await getNewEmptyPage();
   await page.goto(URL_FOR_GETTING_CURRENT_TOURNEY, {waitUntil: 'networkidle0'});
   // Get the ul that wraps the Current Tournaments
-  const li = await page.$('#mt');
-  let text = await page.evaluate(el => el.innerHTML, li);
+  let text = await page.$eval('#mt', el => el.innerHTML);
   const href = text.match(/href="(\/golf\/pga-tour\/[^/]+\/)"/);
-
   // FOR DEBUGGING PURPOSES
   // await page.goto(`https://www.flashscore.com/golf/pga-tour/the-american-express/`, {waitUntil: 'domcontentloaded'});
   await page.goto(`${HOST}${href[1]}`, {waitUntil: 'domcontentloaded'});
