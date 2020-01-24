@@ -16,11 +16,8 @@ const settingsSchema = new Schema({
   },
   pollingStrategy: {
     type: String,
-    default: 'pgatour'
+    default: 'flashscore-scrape'
   },
-  lastPollStarted: Date,
-  lastPollFinished: Date,
-  nextPoll: Date,
   subscriptions: [subscriptionSchema],
   noTourneyAvailable: {type: Boolean, default: false},
   recentPollError: Schema.Types.Mixed
