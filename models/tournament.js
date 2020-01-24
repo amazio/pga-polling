@@ -38,7 +38,9 @@ const tournamentSchema = new Schema({
   isFinished: {type: Boolean, default: false},
   curRound: Number,
   roundState: String,
-  leaderboard: [playerSchema]
+  leaderboard: [playerSchema],
+  // Holds playerId's of amateurs
+  amateurs: [String]
 }, {
   timestamps: true
 });

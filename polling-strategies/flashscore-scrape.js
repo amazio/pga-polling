@@ -86,21 +86,29 @@ function updatePayouts(newLb, purse) {
   let breakdown = payoutBreakdown.breakdown;
   // If breakdown are percentages, convert to dollars
   if (payoutBreakdown.pct) breakdown = breakdown.map(pct => Math.round(pct * purse));
+  //TODO: remove log
+  console.log(breakdown);
   let pIdx = 0;
-  let maxLen = Math.min(newLb.length, breakdown.length);
-  // Verify that the player has started the tourney
-  while (newLb[pIdx] && newLb[pIdx].curPosition && pIdx < maxLen) {
-    let playerCount = 1;
-    let moneySum = breakdown[pIdx];
+  let mIdx = 0;
+  // Verify that the player has started the tourney and boundaries
+  while (newLb[pIdx] && newLb[pIdx].curPosition && pIdx < newLb.length && mIdx < breakdown.length) {
+    let playerCount = newLb[pIdx].isAmateur ? 0 : 1;
+    let amateurCount = newLb[pIdx].isAmateur ? 1 : 0;
+    let moneySum = newLb[pIdx].isAmateur ? 0 : breakdown[mIdx];
+    if (!newLb[pIdx].isAmateur) mIdx++;
     while (newLb[pIdx].curPosition && newLb[pIdx].curPosition === newLb[pIdx + 1].curPosition) {
-      playerCount++;
       pIdx++;
-      moneySum += breakdown[pIdx] ? breakdown[pIdx] : 0;
+      playerCount += newLb[pIdx].isAmateur ? 0 : 1;
+      amateurCount += newLb[pIdx].isAmateur ? 1 : 0;
+      // Only add money if available
+      moneySum += newLb[pIdx].isAmateur ? 0 : breakdown[mIdx] ? breakdown[mIdx] : 0;
+      if (!newLb[pIdx].isAmateur) mIdx++;
     }
-    for (let i = playerCount; i > 0; i--) {
-      newLb[pIdx + 1 - i].moneyEvent = Math.round(moneySum / playerCount);
+    for (let i = playerCount + amateurCount; i > 0; i--) {
+      const player = newLb[pIdx + 1 - i];
+      player.moneyEvent = player.isAmateur ? 0 : Math.round(moneySum / (playerCount - amateurCount));
     }
-    pIdx++;
+    pIdx++; mIdx++;
   }
 }
 
@@ -176,7 +184,6 @@ async function buildLb(lbPage) {
         name: shortName,
         shortName,
         playerId: pEl.id.slice(pEl.id.lastIndexOf('_') + 1),
-        // TODO isAmateur
         curPosition: pEl.querySelector('.event__rating').textContent,
         thru: resultEls[1].textContent,
         today: resultEls[2].textContent,
@@ -184,6 +191,10 @@ async function buildLb(lbPage) {
       };
     });
     return lb;
+  });
+  // Update isAmateur fields
+  leaderboard.forEach(function(p) {
+    p.isAmateur = tourneyDoc.amateurs.includes(p.playerId);
   });
   return leaderboard;
 }
@@ -254,10 +265,6 @@ async function getLbTitleAndYear(lbPage) {
   const year = await lbPage.$eval('.teamHeader__info .teamHeader__text', el => el.textContent);
   return [title.trim(), year.trim()];
 }
-
-/*--- database functions ---*/
-
-
 
 /*--- helper functions ---*/
 
