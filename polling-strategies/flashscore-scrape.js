@@ -30,7 +30,7 @@ module.exports = {
 async function startPolling() {
   settings = await require('../config/settings').getCurrent();
   saveDate = new Date().getDate();
-  browser = await pup.launch({headless: true});
+  browser = await pup.launch({headless: true, env: {TZ: 'UTC'}});
   lbPage = await getLbPage();
   scorecardPage = await getNewEmptyPage();
   [lbData.title, lbData.year] = await getLbTitleAndYear(lbPage);
