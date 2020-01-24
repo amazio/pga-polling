@@ -213,10 +213,12 @@ async function updateTourneyLb(tourneyDoc, newLb) {
       lbPlayer.rounds = docPlayer.rounds;
     } else if (tourneyDoc.isStarted) {
       try {
-        // Assign fullname that's available on the scorecard page
-        lbPlayer.name = await gotoScorecardPage(lbPlayer.playerId);
+        // Assign fullname & country that's available on the scorecard page
+        let name = await gotoScorecardPage(lbPlayer.playerId);
         // Add a comma after last name
-        lbPlayer.name = lbPlayer.name.replace(' ', ', ');
+        let country = name.match(/ \(.+\)/)[0];
+        lbPlayer.name = name.replace(country, '').replace(' ', ', ');  // remove country
+        lbPlayer.country = country.trim();
         // Build/re-build rounds on lbPlayer
         await buildRounds(lbPlayer, scorecardPage);
       } catch (e) {

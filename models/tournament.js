@@ -16,6 +16,7 @@ const roundSchema = new Schema({
 const playerSchema = new Schema({
   name: String,
   shortName: String,
+  country: String,
   playerId: String,
   isAmateur: {type: Boolean, default: false},
   curPosition: {type: String, default: ''},
