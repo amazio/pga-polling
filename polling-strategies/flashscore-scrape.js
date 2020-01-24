@@ -86,8 +86,6 @@ function updatePayouts(newLb, purse) {
   let breakdown = payoutBreakdown.breakdown;
   // If breakdown are percentages, convert to dollars
   if (payoutBreakdown.pct) breakdown = breakdown.map(pct => Math.round(pct * purse));
-  //TODO: remove log
-  console.log(breakdown);
   let pIdx = 0;
   let mIdx = 0;
   // Verify that the player has started the tourney and boundaries
