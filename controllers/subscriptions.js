@@ -13,7 +13,6 @@ async function add(req, res) {
   settings.subscriptions.push(req.body);
   try {
     await settings.save();
-    doPoll(true);
     return res.json('Subscription added');
   } catch {
     return res.status(400).json('Subscription not added');
