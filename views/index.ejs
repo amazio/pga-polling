@@ -10,8 +10,6 @@
   <dl>
     <dt>Polling Status</dt>
     <dd><%= status %></dd>
-    <dt>Next Poll</dt>
-    <dd><%= settings.nextPoll.toLocaleString(undefined, {timeZone: 'America/Los_Angeles'}) %></dd>
   </dl>
   <form action="/polling/<%= action %>" method="POST">
     <button class="btn btn-primary"><%= action.toUpperCase() %> Polling</button>
@@ -40,7 +38,7 @@
 <section>
   <dl class="dl-horizontal">
     <dt>Latest/Current Tourney</dt>
-    <dd><%= tourney.name %> (<%= tourney.tid %>)</dd>
+    <dd><%= tourney.title %> / <%= tourney.year %> (<%= tourney._id %>)</dd>
     <dt>Start Date</dt>
     <dd><%= tourney.startDate %></dd>
     <dt>End Date</dt>
@@ -53,78 +51,6 @@
     <dd><%= tourney.curRound %></dd>
     <dt>Round State</dt>
     <dd><%= tourney.roundState %></dd>
-    <dt>Tourney State (<code>getTourneyState</code> on tourney doc)</dt>
-    <dd><%= tourney.getTourneyState() %></dd>
 </section>
-
-<hr>
-
-<% if (settings.noTourneyAvailable) { %>
-  <h5>No Current Tourney Available from Polling Source</h5>
-<% } else { %>
-  <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
-    <% tourney.leaderboard.forEach(function(p) { %>
-      <div class="panel panel-default">
-          <div class="panel-heading" role="tab" id="head-<%= p._id %>">
-            <h5 class="panel-title">
-              <a role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-<%= p._id %>" class="collapsed" aria-expanded="false" aria-controls="collapse-<%= p._id %>">
-                <span class="badge"><%= p.curPosition %></span>&nbsp;&nbsp;<%= p.name %>
-              </a>
-            </h5>
-          </div>
-          <div id="collapse-<%= p._id %>" class="panel-collapse collapse" role="tabpanel" aria-labelledby="head-<%= p._id %>" aria-expanded="false">
-            <div class="panel-body">
-              <dl class="dl-horizontal">
-                <dt>Total</dt>
-                <dd><%= p.total %></dd>
-                <dt>Today (Thru)</dt>
-                <dd><%= p.today %> (<%= p.thru %><%= p.backNine ? '*' : '' %>)</dd>
-                <dt>Money</dt>
-                <dd><%= p.isAmateur ? 'Amateur' : p.moneyEvent %></dd>
-              </dl>
-              <p>Rounds</p>
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>R</th>
-                    <th>1</th>
-                    <th>2</th>
-                    <th>3</th>
-                    <th>4</th>
-                    <th>5</th>
-                    <th>6</th>
-                    <th>7</th>
-                    <th>8</th>
-                    <th>9</th>
-                    <th>10</th>
-                    <th>11</th>
-                    <th>12</th>
-                    <th>13</th>
-                    <th>14</th>
-                    <th>15</th>
-                    <th>16</th>
-                    <th>17</th>
-                    <th>18</th>
-                    <th>T</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% p.rounds.forEach(function(r) { %>
-                    <tr>
-                      <td><%= r.num %></td>
-                      <% r.holes.forEach(function(h) { %>
-                        <td><%= h.strokes %></td>
-                      <% }) %>
-                      <td><%= r.strokes %></td>
-                    </tr>
-                  <% }) %>
-                </tbody>
-              </table>
-            </div>
-          </div>
-      </div>
-    <% }) %>
-  </div>
-<% } %>
 
 <%- include('./partials/footer') %>
