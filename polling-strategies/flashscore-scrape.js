@@ -171,9 +171,8 @@ async function buildLb(lbPage) {
     const lb = Array.from(playerEls).map(pEl => {
       const resultEls = pEl.querySelectorAll('.event__result');
       let shortName = pEl.querySelector('.event__participant').childNodes[1].nodeValue;
-      let name = shortName;
       return {
-        name,
+        name: shortName,
         shortName,
         playerId: pEl.id.slice(pEl.id.lastIndexOf('_') + 1),
         // TODO isAmateur
@@ -264,7 +263,8 @@ async function gotoScorecardPage(playerId) {
   const URL_FOR_PLAYER_SCORECARD = `https://flashscore.com/match/${playerId}/p/#match-summary`;
   await scorecardPage.goto(URL_FOR_PLAYER_SCORECARD, {waitUntil: 'networkidle0'});
   await scorecardPage.waitForSelector('#tab-match-summary');
-  return await scorecardPage.$eval('a.participant-imglink', el => el.textContent);
+  const name = await scorecardPage.$eval('div.tname-participant a.participant-imglink', el => el.textContent);
+  return name;
 }
 
 async function getLbPage() {
