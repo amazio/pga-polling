@@ -127,11 +127,11 @@ async function updateStats(tourneyDoc, lbPage) {
       - "finished": Tourney has ended
       - "Start time: DD.MM. HH:MM"
       - "Round x"
+      - "After round x"
     */
     let status = document.querySelector('.event__startTime').textContent;
     // Tourney hasn't started first round yet
     if (status.startsWith('Start time')) status = '';
-    // TODO use status to compute curRound, roundState, isStarted, isFinished & roundState (isStarted & finished might need additional logic)
     let isStarted, isFinished, curRound, roundState;
     switch (status) {
       case '':
@@ -145,12 +145,12 @@ async function updateStats(tourneyDoc, lbPage) {
         isFinished = false;
     }
     // TODO: Not sure if the following will work when the round is suspended, etc.
-    if (status.includes('Round')) {
+    if (status.toLowerCase().includes('round')) {
       curRound = parseInt(status.match(/Round (\d)/)[1]);
-      // TODO: still need to figure out  roundState
-      roundState = 'In Progress';
+      roundState = status.startsWith('Round') ? 'In Progress' : 
+      // TODO: still need to figure out roundState
+        status.startsWith('After') ? 'Completed' : '?';
     } 
-
 
     let datesStr = document.querySelector('.event__header--info span:first-child').textContent;
     const {startDate, endDate} = getStartAndEndDates(datesStr);
@@ -227,14 +227,8 @@ async function updateTourneyLb(tourneyDoc, newLb) {
 }
 
 async function buildRounds(lbPlayer, scorecardPage) {
-
   // TODO: remove log
   console.log(`Entered: buildRounds for ${lbPlayer.name} (${lbPlayer.playerId})`)
-  // num: Number,
-  // strokes: {type: Number, default: null},
-  // teeTime: {type: Date, default: null},
-  // holes: [holeSchema]
-
   try {
     const rounds = await scorecardPage.$eval('table#parts', function(table) {
       // TODO - determine what to do with tee times - remove from model?
