@@ -146,7 +146,7 @@ async function updateStats(tourneyDoc, lbPage) {
     }
     // TODO: Not sure if the following will work when the round is suspended, etc.
     if (status.toLowerCase().includes('round')) {
-      curRound = parseInt(status.match(/Round (\d)/)[1]);
+      curRound = parseInt(status.match(/[Rr]ound (\d)/)[1]);
       roundState = status.startsWith('Round') ? 'In Progress' : 
       // TODO: still need to figure out roundState
         status.startsWith('After') ? 'Completed' : '?';
