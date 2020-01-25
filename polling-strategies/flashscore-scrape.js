@@ -189,6 +189,7 @@ async function buildLb(lbPage) {
         teeTime
       };
     });
+    lb = lb.filter(player => !'WD CUT'.includes(player.curPosition));
     return lb;
   });
   // Update isAmateur fields

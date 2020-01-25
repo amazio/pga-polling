@@ -1,6 +1,6 @@
-module.exports = {
-  pct: false,
-  breakdown: [
+module.exports = function(purse) {
+  const pct = false;
+  let breakdown = [
     980000,
     188000,
     48000,
@@ -51,5 +51,13 @@ module.exports = {
     30140,
     28600,
     27720
-  ]
+  ];
+
+  // Build out payouts to 200 places
+  for (var i = breakdown.length - 1; i < 199; i++) {
+    // Reduce each payout position by $100
+    let amt = breakdown[i] - 100;
+    breakdown.push(amt < 0 ? 0 : amt);
+  }
+  return breakdown;
 };
