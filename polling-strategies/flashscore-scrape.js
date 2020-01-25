@@ -207,8 +207,9 @@ async function updateTourneyLb(tourneyDoc, newLb) {
     // Find player obj in tourneyDoc.leaderboard
     const docPlayer = docLb.find(docPlayer => docPlayer.playerId === lbPlayer.playerId);
     if (docPlayer && docPlayer.thru === lbPlayer.thru) {
-      // Assign docPlayer to lbPlayer
+      // Assign docPlayer to lbPlayer, but get curPosition
       const lbPlayerIdx = newLb.indexOf(lbPlayer);
+      docPlayer.curPosition = lbPlayer.curPosition;
       newLb[lbPlayerIdx] = docPlayer;
     } else if (tourneyDoc.isStarted) {
       try {
