@@ -1,6 +1,6 @@
-module.exports = {
-  pct: true,
-  breakdown: [
+module.exports = function(purse) {
+  const pct = true;
+  let breakdown = [
     0.18,
     0.108,
     0.068,
@@ -71,5 +71,14 @@ module.exports = {
     0.00204,
     0.00202,
     0.00200
-  ]
+  ];
+
+  if (pct) breakdown = breakdown.map(pct => Math.round(pct * purse));
+  // Build out payouts to 200 places
+  for (var i = breakdown.length - 1; i < 199; i++) {
+    // Reduce each payout position by $100
+    let amt = breakdown[i] - 100;
+    breakdown.push(amt < 0 ? 0 : amt);
+  }
+  return breakdown;
 };

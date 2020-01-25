@@ -83,23 +83,21 @@ async function poll(tourneyDoc) {
 }
 
 function updatePayouts(newLb, purse) {
-  let breakdown = payoutBreakdown.breakdown;
-  // If breakdown are percentages, convert to dollars
-  if (payoutBreakdown.pct) breakdown = breakdown.map(pct => Math.round(pct * purse));
+  let breakdown = payoutBreakdown(purse);
   let pIdx = 0;
   let mIdx = 0;
   // Verify that the player has started the tourney and boundaries
-  while (newLb[pIdx] && newLb[pIdx].curPosition && pIdx < newLb.length && mIdx < breakdown.length) {
+  while (newLb[pIdx] && newLb[pIdx].curPosition && pIdx < newLb.length) {
     let playerCount = newLb[pIdx].isAmateur ? 0 : 1;
     let amateurCount = newLb[pIdx].isAmateur ? 1 : 0;
     let moneySum = newLb[pIdx].isAmateur ? 0 : breakdown[mIdx];
     if (!newLb[pIdx].isAmateur) mIdx++;
-    while (newLb[pIdx].curPosition && newLb[pIdx].curPosition === newLb[pIdx + 1].curPosition) {
+    while (newLb[pIdx + 1] && newLb[pIdx].curPosition && newLb[pIdx].curPosition === newLb[pIdx + 1].curPosition) {
       pIdx++;
       playerCount += newLb[pIdx].isAmateur ? 0 : 1;
       amateurCount += newLb[pIdx].isAmateur ? 1 : 0;
       // Only add money if available
-      moneySum += newLb[pIdx].isAmateur ? 0 : breakdown[mIdx] ? breakdown[mIdx] : 0;
+      moneySum += newLb[pIdx].isAmateur ? 0 : breakdown[mIdx];
       if (!newLb[pIdx].isAmateur) mIdx++;
     }
     for (let i = playerCount + amateurCount; i > 0; i--) {
