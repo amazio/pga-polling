@@ -172,7 +172,7 @@ async function updateStats(tourneyDoc, lbPage) {
 async function buildLb(lbPage) {
   const leaderboard = await lbPage.evaluate(function() {
     let playerEls = document.querySelectorAll('div.sportName.golf div.event__match[id]');
-    const lb = Array.from(playerEls).map(pEl => {
+    let lb = Array.from(playerEls).map(pEl => {
       const resultEls = pEl.querySelectorAll('.event__result');
       let shortName = pEl.querySelector('.event__participant').childNodes[1].nodeValue;
       let thru = resultEls[1].textContent;
