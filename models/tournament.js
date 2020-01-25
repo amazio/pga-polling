@@ -9,7 +9,6 @@ const holeSchema = new Schema({
 const roundSchema = new Schema({
   num: Number,
   strokes: {type: Number, default: null},
-  teeTime: {type: Date, default: null},
   holes: [holeSchema]
 }, {_id: false});
 
@@ -24,6 +23,8 @@ const playerSchema = new Schema({
   thru: {type: String, default: null},
   today: {type: String, default: null},
   total: {type: String, default: 0},
+  // teeTime will be assigned using the 'thru' when it contains a ":"
+  teeTime: {type: Date, default: null},
   moneyEvent: Number,
   rounds: [roundSchema]
 }, {_id: false});

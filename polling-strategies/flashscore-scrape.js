@@ -175,15 +175,18 @@ async function buildLb(lbPage) {
     const lb = Array.from(playerEls).map(pEl => {
       const resultEls = pEl.querySelectorAll('.event__result');
       let shortName = pEl.querySelector('.event__participant').childNodes[1].nodeValue;
+      let thru = resultEls[1].textContent;
+      let teeTime = thru.includes(':') ? thru : null;
       return {
         // Temporary assign to name until scorecard provides full name 
         name: shortName,
         shortName,
         playerId: pEl.id.slice(pEl.id.lastIndexOf('_') + 1),
         curPosition: pEl.querySelector('.event__rating').textContent,
-        thru: resultEls[1].textContent,
+        thru,
         today: resultEls[2].textContent,
-        total: resultEls[0].textContent
+        total: resultEls[0].textContent,
+        teeTime
       };
     });
     return lb;
