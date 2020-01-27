@@ -35,7 +35,7 @@ async function startPolling() {
   scorecardPage = await getNewEmptyPage();
   [lbData.title, lbData.year] = await getLbTitleAndYear(lbPage);
   tourneyDoc = await Tournament.findByTitleAndYear(lbData.title, lbData.year);
-  payoutBreakdown = require(tourneyDoc.payoutPath);
+  payoutBreakdown = require(tourneyDoc.payoutPath)(tourneyDoc.purse);
   await poll(tourneyDoc);
   return;
 }
@@ -90,8 +90,8 @@ async function poll(tourneyDoc) {
   }
 }
 
-function updatePayouts(newLb, purse) {
-  let breakdown = payoutBreakdown(purse);
+function updatePayouts(newLb) {
+  let breakdown = payoutBreakdown;  // shorter var name :)
   let pIdx = 0;
   let mIdx = 0;
   // Verify that the player has started the tourney and boundaries
@@ -99,20 +99,19 @@ function updatePayouts(newLb, purse) {
     let playerCount = newLb[pIdx].isAmateur ? 0 : 1;
     let amateurCount = newLb[pIdx].isAmateur ? 1 : 0;
     let moneySum = newLb[pIdx].isAmateur ? 0 : breakdown[mIdx];
-    if (!newLb[pIdx].isAmateur) mIdx++;
     while (newLb[pIdx + 1] && newLb[pIdx].curPosition && newLb[pIdx].curPosition === newLb[pIdx + 1].curPosition) {
       pIdx++;
+      if (!newLb[pIdx].isAmateur) mIdx++;
       playerCount += newLb[pIdx].isAmateur ? 0 : 1;
       amateurCount += newLb[pIdx].isAmateur ? 1 : 0;
-      // Only add money if available
       moneySum += newLb[pIdx].isAmateur ? 0 : breakdown[mIdx];
-      if (!newLb[pIdx].isAmateur) mIdx++;
     }
     for (let i = playerCount + amateurCount; i > 0; i--) {
       const player = newLb[pIdx + 1 - i];
       player.moneyEvent = player.isAmateur ? 0 : Math.round(moneySum / (playerCount - amateurCount));
     }
-    pIdx++; mIdx++;
+    pIdx++;
+    if (newLb[pIdx] && !newLb[pIdx].isAmateur) mIdx++;
   }
 }
 
