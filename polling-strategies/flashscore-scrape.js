@@ -37,6 +37,7 @@ async function startPolling() {
   tourneyDoc = await Tournament.findByTitleAndYear(lbData.title, lbData.year);
   payoutBreakdown = require(tourneyDoc.payoutPath);
   await poll(tourneyDoc);
+  return;
 }
 
 // Called by polling service to stop polling
@@ -53,33 +54,40 @@ async function stopPolling() {
 /*--- scraping functions ---*/
 
 async function poll(tourneyDoc) {
-  if (!settings.pollingActive) return;
-  // Verify that the tournament has not changed
-  [lbData.title] = await getLbTitleAndYear(lbPage);
-  if (
-      tourneyDoc.title !== lbData.title ||  // Tourney changed?
-      saveDate !== new Date().getDate()  // Reload every new day
-    ) {
-    // Stop and reload everything
+  try {
+    if (!settings.pollingActive) return;
+    // Verify that the tournament has not changed
+    [lbData.title] = await getLbTitleAndYear(lbPage);
+    if (
+        tourneyDoc.title !== lbData.title ||  // Tourney changed?
+        saveDate !== new Date().getDate()  // Reload every new day
+      ) {
+      // Stop and reload everything
+      await stopPolling();
+      await startPolling();
+    } else {
+      // Update tourney doc in this block and notify if changes
+      await updateStats(tourneyDoc, lbPage);
+      const newLb = await buildLb(lbPage);
+      if (JSON.stringify(newLb) !== savePrevLb) {
+        savePrevLb = JSON.stringify(newLb);
+        await updateTourneyLb(tourneyDoc, newLb);
+      }
+      if (tourneyDoc.isModified()) {
+        // TODO: remove log
+        console.log('Saving tourneyDoc');
+        await tourneyDoc.save();
+        updateSubscribersCallback(tourneyDoc);
+      }
+    }
+    timerId = setTimeout(() => poll(tourneyDoc), 5000);
+  } catch (e) {
+    console.log('Error occurred within poll()\n', e);
     await stopPolling();
     await startPolling();
-  } else {
-    // Update tourney doc in this block and notify if changes
-    await updateStats(tourneyDoc, lbPage);
-    const newLb = await buildLb(lbPage);
-    if (JSON.stringify(newLb) !== savePrevLb) {
-      savePrevLb = JSON.stringify(newLb);
-      await updateTourneyLb(tourneyDoc, newLb);
-    }
-    if (tourneyDoc.isModified()) {
-      // TODO: remove log
-      console.log('Saving tourneyDoc');
-      await tourneyDoc.save();
-      updateSubscribersCallback(tourneyDoc);
-    }
+  } finally {
+    return;
   }
-  timerId = setTimeout(() => poll(tourneyDoc), 5000);
-  return;
 }
 
 function updatePayouts(newLb, purse) {
@@ -279,17 +287,9 @@ async function getLbTitleAndYear(lbPage) {
 // Use the global scorecardPage to browse to a player's scorecard and return the fullname
 async function gotoScorecardPage(playerId) {
   const URL_FOR_PLAYER_SCORECARD = `https://flashscore.com/match/${playerId}/p/#match-summary`;
-  let name;
-  try {
-    await scorecardPage.goto(URL_FOR_PLAYER_SCORECARD, {waitUntil: 'networkidle0'});
-    await scorecardPage.waitForSelector('#tab-match-summary');
-    name = await scorecardPage.$eval('div.tname-participant a.participant-imglink', el => el.textContent);
-  } catch (e) {
-    console.log('Error inside of gotoScorecardPage function', e);
-    scorecardPage.close();
-    scorecardPage = await getNewEmptyPage();
-    return await gotoScorecardPage(playerId);
-  }
+  await scorecardPage.goto(URL_FOR_PLAYER_SCORECARD, {waitUntil: 'networkidle0'});
+  await scorecardPage.waitForSelector('#tab-match-summary');
+  let name = await scorecardPage.$eval('div.tname-participant a.participant-imglink', el => el.textContent);
   return name;
 }
 
