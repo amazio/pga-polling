@@ -229,7 +229,7 @@ async function updateTourneyLb(tourneyDoc, newLb) {
         if (country && typeof country === 'string') {
           // Add a comma after last name
           lbPlayer.name = name.replace(country, '').replace(' ', ', ');  // remove country
-          lbPlayer.country = country.match(/\((.+)\)/)[1];
+          lbPlayer.country = country.match(/\((.+)\)/)[1].toUpperCase();
         } else {
           lbPlayer.name = name;
         }
