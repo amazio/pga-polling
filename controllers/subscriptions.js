@@ -1,10 +1,14 @@
-const settings = require('../config/settings').getCurrent();
-const doPoll = require('../services/polling').doPoll;
+const notificationService = require('../services/notification');
 
 module.exports = {
   add,
   remove
 };
+
+let settings;
+(async function() {
+  settings = await require('../config/settings').getCurrent();
+})();
 
 async function add(req, res) {
   // If postUrl of subscription being added exists, let's delete the old before adding
@@ -13,8 +17,10 @@ async function add(req, res) {
   settings.subscriptions.push(req.body);
   try {
     await settings.save();
+    await notificationService.notifyOne(req.body.postUrl);
     return res.json('Subscription added');
-  } catch {
+  } catch (e) {
+    console.log('Error occurred in subscription.add function\n', e);
     return res.status(400).json('Subscription not added');
   }
 }
