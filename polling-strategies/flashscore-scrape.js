@@ -65,6 +65,7 @@ async function poll(tourneyDoc) {
       // Stop and reload everything
       await stopPolling();
       await startPolling();
+      return;
     } else {
       // Update tourney doc in this block and notify if changes
       await updateStats(tourneyDoc, lbPage);
@@ -220,7 +221,7 @@ async function updateTourneyLb(tourneyDoc, newLb) {
       const lbPlayerIdx = newLb.indexOf(lbPlayer);
       docPlayer.curPosition = lbPlayer.curPosition;
       newLb[lbPlayerIdx] = docPlayer;
-    } else if (tourneyDoc.isStarted) {
+    } else {
       try {
         // Assign fullname & country that's available on the scorecard page
         let name = await gotoScorecardPage(lbPlayer.playerId);
