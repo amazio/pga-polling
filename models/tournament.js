@@ -24,7 +24,7 @@ const playerSchema = new Schema({
   today: {type: String, default: null},
   total: {type: String, default: 0},
   // teeTime will be assigned using the 'thru' when it contains a ":"
-  teeTime: {type: Date, default: null},
+  teeTime: {type: String, default: null},
   moneyEvent: Number,
   rounds: [roundSchema]
 }, {_id: false});
