@@ -56,9 +56,6 @@ async function stopPolling() {
 async function poll(tourneyDoc) {
   try {
     if (!settings.pollingActive) return;
-    // Throw error on either page error so that catch is triggered
-    lbPage.on('error', err => {throw err;});
-    scorecardPage.on('error', err => {throw err;});
     // Verify that the tournament has not changed
     [lbData.title] = await getLbTitleAndYear(lbPage);
     if (
@@ -314,5 +311,7 @@ async function getLbPage() {
 async function getNewEmptyPage() {
   const page = await browser.newPage();
   page.setUserAgent = USER_AGENT;
+  // Throw error on page error so that catch is triggered
+  page.on('error', err => {throw err;});
   return page;
 }
