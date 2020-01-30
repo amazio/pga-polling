@@ -243,7 +243,7 @@ async function updateTourneyLb(tourneyDoc, newLb) {
       }
       // Determine if backNine
       const lastRoundHoles = lbPlayer.rounds && lbPlayer.rounds.length && lbPlayer.rounds[lbPlayer.rounds.length - 1].holes;
-      if (lastRoundHoles) lbPlayer.backNine = lastRoundHoles[0].strokes === 0 && lastRoundHoles[17].strokes !== 0;
+      if (lastRoundHoles) lbPlayer.backNine = lastRoundHoles[0].strokes === 0 && lastRoundHoles[9].strokes !== 0;
     }
   }
   if (tourneyDoc.isStarted) updatePayouts(newLb, tourneyDoc.purse);
