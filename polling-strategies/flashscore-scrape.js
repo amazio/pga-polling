@@ -46,9 +46,12 @@ async function stopPolling() {
     clearTimeout(timerId);
     timerId = null;
   }
+  await scorecardPage.close();
+  await lbPage.close();
+  await browser.close();
   savePrevLb = null;
   scorecardPage = null;
-  await browser.close();
+  lbPage = null;
 }
 
 /*--- scraping functions ---*/
