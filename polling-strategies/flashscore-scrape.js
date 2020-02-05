@@ -7,6 +7,8 @@ const Tournament = require('../models/tournament');
 const updateSubscribersCallback = require('../services/notification').updateSubscribersCallback;
 
 let settings;
+let stopPollingFlag;
+let restartPollingFlag;
 let browser;
 let lbPage;  // Holds https://www.flashscore.com/golf/pga-tour/{current tourney name}/
 let scorecardPage;  // Use over and over to load scorecard page as needed (may replace below caching to save resources)
@@ -30,18 +32,25 @@ module.exports = {
 async function startPolling() {
   settings = await require('../config/settings').getCurrent();
   saveDate = new Date().getDate();
-  browser = await pup.launch({headless: true, env: {TZ: 'UTC'}});
+  browser = await pup.launch({headless: true, devtools: false, env: {TZ: 'UTC'}});
   lbPage = await getLbPage();
   scorecardPage = await getNewEmptyPage();
   [lbData.title, lbData.year] = await getLbTitleAndYear(lbPage);
   tourneyDoc = await Tournament.findByTitleAndYear(lbData.title, lbData.year);
   payoutBreakdown = require(tourneyDoc.payoutPath)(tourneyDoc.purse);
+  stopPollingFlag = false;
+  restartPollingFlag = false;
   await poll(tourneyDoc);
   return;
 }
 
 // Called by polling service to stop polling
-async function stopPolling() {
+function stopPolling() {
+  // Set flag to be checked during next poll
+  stopPollingFlag = true;
+}
+
+async function stopPollingCleanup() {
   if (timerId) {
     clearTimeout(timerId);
     timerId = null;
@@ -54,11 +63,23 @@ async function stopPolling() {
   lbPage = null;
 }
 
+
+
 /*--- scraping functions ---*/
 
 async function poll(tourneyDoc) {
   try {
     if (!settings.pollingActive) return;
+    if (stopPollingFlag) {
+      stopPollingFlag = false;
+      await stopPollingCleanup();
+      return;
+    } else if (restartPollingFlag) {
+      restartPollingFlag = false;
+      await stopPollingCleanup();
+      await startPolling()
+      return;
+    }
     // Verify that the tournament has not changed
     [lbData.title] = await getLbTitleAndYear(lbPage);
     if (
@@ -66,8 +87,7 @@ async function poll(tourneyDoc) {
         saveDate !== new Date().getDate()  // Reload every new day
       ) {
       // Stop and reload everything
-      await stopPolling();
-      await startPolling();
+      restartPollingFlag = true;
       return;
     } else {
       // Update tourney doc in this block and notify if changes
