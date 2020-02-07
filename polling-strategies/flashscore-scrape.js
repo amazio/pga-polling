@@ -61,6 +61,10 @@ async function stopPollingCleanup() {
   savePrevLb = null;
   scorecardPage = null;
   lbPage = null;
+  if (restartPollingFlag) {
+    restartPollingFlag = false;
+    await startPolling();
+  }
 }
 
 /*--- scraping functions ---*/
@@ -68,15 +72,9 @@ async function stopPollingCleanup() {
 async function poll(tourneyDoc) {
   try {
     if (!settings.pollingActive) return;
-    if (stopPollingFlag) {
+    if (stopPollingFlag || restartPollingFlag) {
       stopPollingFlag = false;
       await stopPollingCleanup();
-      return;
-    } else if (restartPollingFlag) {
-      stopPolling();
-      restartPollingFlag = false;
-      await stopPollingCleanup();
-      await startPolling();
       return;
     }
     // Verify that the tournament has not changed
