@@ -13,11 +13,17 @@ router.get('/', async function(req, res) {
 });
 
 router.post('/polling/stop', async function(req, res) {
-  pollingService.stopPolling(req, res);
+  pollingService.stopPolling();
+  setTimeout(function() {
+    res.redirect('/');
+  }, 4000);
 });
 
 router.post('/polling/start', async function(req, res) {
-  pollingService.startPolling(req, res);
+  pollingService.startPolling();
+  setTimeout(function() {
+    res.redirect('/');
+  }, 4000);
 });
 
 module.exports = router;

@@ -46,15 +46,15 @@ async function startPolling() {
 
 // Called by polling service to stop polling
 function stopPolling() {
+  if (timerId) {
+    clearTimeout(timerId);
+    timerId = null;
+  }
   // Set flag to be checked during next poll
   stopPollingFlag = true;
 }
 
 async function stopPollingCleanup() {
-  if (timerId) {
-    clearTimeout(timerId);
-    timerId = null;
-  }
   await scorecardPage.close();
   await lbPage.close();
   await browser.close();
@@ -62,8 +62,6 @@ async function stopPollingCleanup() {
   scorecardPage = null;
   lbPage = null;
 }
-
-
 
 /*--- scraping functions ---*/
 
@@ -75,9 +73,10 @@ async function poll(tourneyDoc) {
       await stopPollingCleanup();
       return;
     } else if (restartPollingFlag) {
+      stopPolling();
       restartPollingFlag = false;
       await stopPollingCleanup();
-      await startPolling()
+      await startPolling();
       return;
     }
     // Verify that the tournament has not changed
