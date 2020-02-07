@@ -2,6 +2,7 @@ const pup = require('puppeteer');
 
 const HOST = 'https://flashscore.com';
 const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36';
+const POLLING_FREQ = 5000;
 
 const Tournament = require('../models/tournament');
 const updateSubscribersCallback = require('../services/notification').updateSubscribersCallback;
@@ -31,6 +32,10 @@ module.exports = {
 // Called by polling service to start polling - should re-init state
 async function startPolling() {
   settings = await require('../config/settings').getCurrent();
+  if (!settings.pollingActive) {
+    settings.pollingActive = true;
+    await settings.save();
+  }
   saveDate = new Date().getDate();
   browser = await pup.launch({headless: true, devtools: false, env: {TZ: 'UTC'}});
   lbPage = await getLbPage();
@@ -41,29 +46,34 @@ async function startPolling() {
   stopPollingFlag = false;
   restartPollingFlag = false;
   await poll(tourneyDoc);
-  return;
 }
 
 // Called by polling service to stop polling
-function stopPolling() {
-  if (timerId) {
-    clearTimeout(timerId);
-    timerId = null;
-  }
+async function stopPolling() {
+  console.log('Polling stopping... Will stop next loop after current build.');
+  settings.pollingActive = false;
+  await settings.save();
   // Set flag to be checked during next poll
   stopPollingFlag = true;
 }
 
 async function stopPollingCleanup() {
-  await scorecardPage.close();
-  await lbPage.close();
-  await browser.close();
+  if (timerId) {
+    clearTimeout(timerId);
+    timerId = null;
+  }
+  if (scorecardPage) await scorecardPage.close();
+  if (lbPage) await lbPage.close();
+  if (browser) await browser.close();
   savePrevLb = null;
   scorecardPage = null;
   lbPage = null;
+  console.log('Polling stopped');
   if (restartPollingFlag) {
+    console.log('Polling restarting...');
     restartPollingFlag = false;
     await startPolling();
+    console.log('Polling restarted');
   }
 }
 
@@ -85,7 +95,6 @@ async function poll(tourneyDoc) {
       ) {
       // Stop and reload everything
       restartPollingFlag = true;
-      return;
     } else {
       // Update tourney doc in this block and notify if changes
       await updateStats(tourneyDoc, lbPage);
@@ -98,16 +107,14 @@ async function poll(tourneyDoc) {
         // TODO: remove log
         console.log('Saving tourneyDoc');
         await tourneyDoc.save();
-        updateSubscribersCallback(tourneyDoc);
+        await updateSubscribersCallback(tourneyDoc);
       }
+      setTimeout(() => poll(tourneyDoc), POLLING_FREQ);
     }
-    timerId = setTimeout(() => poll(tourneyDoc), 5000);
   } catch (e) {
     console.log('Error occurred within poll()\n', e);
-    await stopPolling();
-    await startPolling();
-  } finally {
-    return;
+    restartPollingFlag = true;
+    setTimeout(() => poll(tourneyDoc), POLLING_FREQ);
   }
 }
 
@@ -274,7 +281,6 @@ async function buildRounds(lbPlayer, scorecardPage) {
   console.log(`Entered: buildRounds for ${lbPlayer.name} (${lbPlayer.playerId})`)
   try {
     const rounds = await scorecardPage.$eval('table#parts', function(table) {
-      // TODO - determine what to do with tee times - remove from model?
       const rounds = [];
       const theads = table.querySelectorAll('thead');
       const tbodys = table.querySelectorAll('tbody');
