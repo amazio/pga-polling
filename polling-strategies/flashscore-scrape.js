@@ -109,8 +109,8 @@ async function poll(tourneyDoc) {
         await tourneyDoc.save();
         await updateSubscribersCallback(tourneyDoc);
       }
-      setTimeout(() => poll(tourneyDoc), POLLING_FREQ);
     }
+    setTimeout(() => poll(tourneyDoc), POLLING_FREQ);
   } catch (e) {
     console.log('Error occurred within poll()\n', e);
     restartPollingFlag = true;
@@ -330,6 +330,7 @@ async function getLbPage() {
   // await page.goto(`https://www.flashscore.com/golf/pga-tour/the-american-express/`, {waitUntil: 'domcontentloaded'});
   await page.goto(`${HOST}${href[1]}`, {waitUntil: 'domcontentloaded'});
   await page.waitForSelector('.event__match--last');
+  page.on('error', err => {throw err;});
   return page;
 }
 
