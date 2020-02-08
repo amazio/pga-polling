@@ -273,6 +273,7 @@ async function updateTourneyLb(tourneyDoc, newLb) {
   if (tourneyDoc.isStarted) updatePayouts(newLb, tourneyDoc.purse);
   // Replace tourneyDoc.leaderboard with newLb
   tourneyDoc.leaderboard = newLb;
+  console.log('Exiting: updateTourneyLb');
   return;
 }
 
