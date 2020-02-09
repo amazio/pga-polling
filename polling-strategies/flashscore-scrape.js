@@ -177,7 +177,7 @@ async function updateStats() {
       curRound = parseInt(status.match(/[Rr]ound (\d)/)[1]);
       roundState = status.startsWith('Round') ? 'In Progress' : 
       // TODO: still need to figure out roundState
-        status.startsWith('After') ? 'Completed' : '?';
+      status.startsWith('After') || status.startsWith('Finished') ? 'Completed' : '?';
     } 
 
     let datesStr = document.querySelector('.event__header--info span:first-child').textContent;
