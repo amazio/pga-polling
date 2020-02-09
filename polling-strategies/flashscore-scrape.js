@@ -87,7 +87,6 @@ async function stopPolling() {
 /*--- scraping functions ---*/
 
 async function poll() {
-  console.log('Entering: poll');
   if (!settings.pollingActive) return;
   // Verify that the tournament has not changed
   [lbData.title] = await getLbTitleAndYear();
@@ -111,7 +110,6 @@ async function poll() {
       await updateSubscribersCallback(tourneyDoc);
     }
   }
-  console.log('Exiting: poll');
 }
 
 function updatePayouts(newLb) {
