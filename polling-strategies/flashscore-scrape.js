@@ -332,11 +332,24 @@ async function getLbPage() {
 // Get's a new page object with the user-agent set
 async function getNewEmptyPage() {
   const page = await browser.newPage();
+  await page.setRequestInterception(true);
   // Throw error on page error so that catch is triggered
   page.on('error', err => {throw err;});
+  page.on('request', filterRequests);
   return page;
 }
 
 async function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Function used to cancel requests for images, stylesheets & fonts
+function filterRequests(req) {
+  const reqType = req.resourceType();
+  if( reqType === 'stylesheet' || reqType === 'font' || reqType === 'image'){
+      req.abort();
+  }
+  else {
+      req.continue();
+  }
 }
