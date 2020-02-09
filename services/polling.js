@@ -21,13 +21,13 @@ async function load() {
 
 // Called if settings.pollingActive & via web page HTTP request
 async function startPolling(req, res) {
-  await strategy.startPolling();
+  strategy.startPolling();
   if (res) res.redirect('/');
 }
 
 // Called via web page HTTP request to stop polling
 async function stopPolling(req, res) {
-  await strategy.stopPolling();
+  strategy.stopPolling();
   if (res) res.redirect('/');
 }
 

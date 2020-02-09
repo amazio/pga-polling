@@ -8,7 +8,6 @@ const Tournament = require('../models/tournament');
 const updateSubscribersCallback = require('../services/notification').updateSubscribersCallback;
 
 let settings;
-let stopPollingFlag;
 let restartPollingFlag;
 let browser;
 let lbPage;  // Holds https://www.flashscore.com/golf/pga-tour/{current tourney name}/
@@ -31,33 +30,47 @@ module.exports = {
 
 // Called by polling service to start polling - should re-init state
 async function startPolling() {
+  await doSetup();
+  while (!restartPollingFlag) {
+    try {
+      await poll();
+      await wait(POLLING_FREQ);
+    } catch(e) {
+      console.log('Error caught in startPolling\n', e);
+      restartPollingFlag = true;
+    }
+  }
+  await stopPolling();
+  return setTimeout(startPolling);
+}
+
+async function doSetup() {
+  console.log('Entered: doSetup');
+  restartPollingFlag = false;
   settings = await require('../config/settings').getCurrent();
   if (!settings.pollingActive) {
     settings.pollingActive = true;
     await settings.save();
   }
   saveDate = new Date().getDate();
-  browser = await pup.launch({headless: true, devtools: false, env: {TZ: 'UTC'}});
+  browser = await pup.launch({
+    headless: true,
+    devtools: false,
+    env: {TZ: 'UTC'},
+    args: [`--user-agent=${USER_AGENT}`, '--no-sandbox', '--disable-setuid-sandbox']
+  });
   lbPage = await getLbPage();
   scorecardPage = await getNewEmptyPage();
-  [lbData.title, lbData.year] = await getLbTitleAndYear(lbPage);
+  [lbData.title, lbData.year] = await getLbTitleAndYear();
   tourneyDoc = await Tournament.findByTitleAndYear(lbData.title, lbData.year);
   payoutBreakdown = require(tourneyDoc.payoutPath)(tourneyDoc.purse);
-  stopPollingFlag = false;
-  restartPollingFlag = false;
-  await poll(tourneyDoc);
+  console.log('Exiting: doSetup');
 }
 
-// Called by polling service to stop polling
 async function stopPolling() {
-  console.log('Polling stopping... Will stop next loop after current build.');
+  console.log('Entered: stopPolling');
   settings.pollingActive = false;
   await settings.save();
-  // Set flag to be checked during next poll
-  stopPollingFlag = true;
-}
-
-async function stopPollingCleanup() {
   if (timerId) {
     clearTimeout(timerId);
     timerId = null;
@@ -68,54 +81,37 @@ async function stopPollingCleanup() {
   savePrevLb = null;
   scorecardPage = null;
   lbPage = null;
-  console.log('Polling stopped');
-  if (restartPollingFlag) {
-    console.log('Polling restarting...');
-    restartPollingFlag = false;
-    await startPolling();
-    console.log('Polling restarted');
-  }
+  console.log('Exiting: stopPolling');
 }
 
 /*--- scraping functions ---*/
 
-async function poll(tourneyDoc) {
-  try {
-    if (!settings.pollingActive) return;
-    if (stopPollingFlag || restartPollingFlag) {
-      stopPollingFlag = false;
-      await stopPollingCleanup();
-      return;
-    }
-    // Verify that the tournament has not changed
-    [lbData.title] = await getLbTitleAndYear(lbPage);
-    if (
-        tourneyDoc.title !== lbData.title ||  // Tourney changed?
-        saveDate !== new Date().getDate()  // Reload every new day
-      ) {
-      // Stop and reload everything
-      restartPollingFlag = true;
-    } else {
-      // Update tourney doc in this block and notify if changes
-      await updateStats(tourneyDoc, lbPage);
-      const newLb = await buildLb(lbPage);
-      if (JSON.stringify(newLb) !== savePrevLb) {
-        savePrevLb = JSON.stringify(newLb);
-        await updateTourneyLb(tourneyDoc, newLb);
-      }
-      if (tourneyDoc.isModified()) {
-        // TODO: remove log
-        console.log('Saving tourneyDoc');
-        await tourneyDoc.save();
-        await updateSubscribersCallback(tourneyDoc);
-      }
-    }
-    setTimeout(() => poll(tourneyDoc), POLLING_FREQ);
-  } catch (e) {
-    console.log('Error occurred within poll()\n', e);
+async function poll() {
+  console.log('Entering: poll');
+  if (!settings.pollingActive) return;
+  // Verify that the tournament has not changed
+  [lbData.title] = await getLbTitleAndYear();
+  if (
+      tourneyDoc.title !== lbData.title ||  // Tourney changed?
+      saveDate !== new Date().getDate()  // Reload every new day
+    ) {
+    // Stop and reload everything
     restartPollingFlag = true;
-    setTimeout(() => poll(tourneyDoc), POLLING_FREQ);
+  } else {
+    // Update tourney doc in this block and notify if changes
+    await updateStats();
+    const newLb = await buildLb();
+    if (JSON.stringify(newLb) !== savePrevLb) {
+      savePrevLb = JSON.stringify(newLb);
+      await updateTourneyLb(newLb);
+    }
+    if (tourneyDoc.isModified()) {
+      console.log('Saving tourneyDoc');
+      await tourneyDoc.save();
+      await updateSubscribersCallback(tourneyDoc);
+    }
   }
+  console.log('Exiting: poll');
 }
 
 function updatePayouts(newLb) {
@@ -144,7 +140,7 @@ function updatePayouts(newLb) {
 }
 
 // Returns true if any of the tourney's stats changed
-async function updateStats(tourneyDoc, lbPage) {
+async function updateStats() {
   const stats = await lbPage.evaluate(function() {
 
     function getStartAndEndDates(datesStr) {
@@ -204,7 +200,7 @@ async function updateStats(tourneyDoc, lbPage) {
   for (stat in stats) tourneyDoc[stat] = stats[stat];
 }
 
-async function buildLb(lbPage) {
+async function buildLb() {
   const leaderboard = await lbPage.evaluate(function() {
     let playerEls = document.querySelectorAll('div.sportName.golf div.event__match[id]');
     let lb = Array.from(playerEls).map(pEl => {
@@ -235,7 +231,7 @@ async function buildLb(lbPage) {
 }
 
 // Replaces tourneyDoc.leaderboard with new computed lb
-async function updateTourneyLb(tourneyDoc, newLb) {
+async function updateTourneyLb(newLb) {
   // TODO: remove log
   console.log('Entered: updateTourneyLb')
   const docLb = tourneyDoc.leaderboard;
@@ -261,7 +257,7 @@ async function updateTourneyLb(tourneyDoc, newLb) {
           lbPlayer.name = name;
         }
         // Build/re-build rounds on lbPlayer
-        await buildRounds(lbPlayer, scorecardPage);
+        await buildRounds(lbPlayer);
       } catch (e) {
         console.log(e);
       }
@@ -277,7 +273,7 @@ async function updateTourneyLb(tourneyDoc, newLb) {
   return;
 }
 
-async function buildRounds(lbPlayer, scorecardPage) {
+async function buildRounds(lbPlayer) {
   // TODO: remove log
   console.log(`Entered: buildRounds for ${lbPlayer.name} (${lbPlayer.playerId})`)
   try {
@@ -303,7 +299,7 @@ async function buildRounds(lbPlayer, scorecardPage) {
   }
 }
 
-async function getLbTitleAndYear(lbPage) {
+async function getLbTitleAndYear() {
   const title = await lbPage.$eval('.teamHeader__info .teamHeader__name', el => el.textContent);
   const year = await lbPage.$eval('.teamHeader__info .teamHeader__text', el => el.textContent);
   return [title.trim(), year.trim()];
@@ -323,6 +319,7 @@ async function gotoScorecardPage(playerId) {
 async function getLbPage() {
   const URL_FOR_GETTING_CURRENT_TOURNEY = 'https://flashscore.com/golf/pga-tour';
   const page = await getNewEmptyPage();
+  page.on('error', err => {throw err;});
   await page.goto(URL_FOR_GETTING_CURRENT_TOURNEY, {waitUntil: 'networkidle0'});
   // Get the ul that wraps the Current Tournaments
   let text = await page.$eval('#mt', el => el.innerHTML);
@@ -331,15 +328,17 @@ async function getLbPage() {
   // await page.goto(`https://www.flashscore.com/golf/pga-tour/the-american-express/`, {waitUntil: 'domcontentloaded'});
   await page.goto(`${HOST}${href[1]}`, {waitUntil: 'domcontentloaded'});
   await page.waitForSelector('.event__match--last');
-  page.on('error', err => {throw err;});
   return page;
 }
 
 // Get's a new page object with the user-agent set
 async function getNewEmptyPage() {
   const page = await browser.newPage();
-  page.setUserAgent = USER_AGENT;
   // Throw error on page error so that catch is triggered
   page.on('error', err => {throw err;});
   return page;
+}
+
+async function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
