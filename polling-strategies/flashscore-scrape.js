@@ -65,7 +65,6 @@ async function doSetup() {
   scorecardPage = await getNewEmptyPage();
   let [title, year] = await getLbTitleAndYear();
   tourneyDoc = await Tournament.findByTitleAndYear(title, year);
-  payoutBreakdown = require(tourneyDoc.payoutPath)(tourneyDoc.purse);
   console.log('Exiting: doSetup');
 }
 
@@ -171,6 +170,7 @@ async function updateStats() {
     const {startDate, endDate} = getStartAndEndDates(datesStr);
     let purse = document.querySelector('.event__header--info span:nth-child(3)').textContent;
     purse = purse.slice(purse.lastIndexOf('$') + 1).replace(/[^\d]/g, '');
+    if (!payoutBreakdown) payoutBreakdown = require(tourneyDoc.payoutPath)(parseInt(purse));
     return {
       purse,
       startDate,
@@ -247,8 +247,8 @@ async function updateTourneyLb(newLb) {
       if (lastRoundHoles) lbPlayer.backNine = lastRoundHoles[0].strokes === 0 && lastRoundHoles[9].strokes !== 0;
     }
   }
-  if (tourneyDoc.isStarted) updatePayouts(newLb, tourneyDoc.purse);
   // Replace tourneyDoc.leaderboard with newLb
+  if (tourneyDoc.isStarted) updatePayouts(newLb);
   tourneyDoc.leaderboard = newLb;
   console.log('Exiting: updateTourneyLb');
   return;
