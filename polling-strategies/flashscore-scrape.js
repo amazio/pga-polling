@@ -176,10 +176,9 @@ async function updateStats() {
     if (status.toLowerCase().includes('round')) {
       curRound = parseInt(status.match(/[Rr]ound (\d)/)[1]);
       roundState = status.startsWith('Round') ? 'In Progress' : 
-      // TODO: still need to figure out roundState
-      status.startsWith('After') || status.startsWith('Finished') ? 'Completed' : '?';
-    } 
-
+        // TODO: still need to figure out roundState
+        status.startsWith('After') ? 'Completed' : '?';
+    } else if (status.startsWith('Finished')) roundState = 'Completed';
     let datesStr = document.querySelector('.event__header--info span:first-child').textContent;
     const {startDate, endDate} = getStartAndEndDates(datesStr);
     let purse = document.querySelector('.event__header--info span:nth-child(3)').textContent;
@@ -243,21 +242,18 @@ async function updateTourneyLb(newLb) {
       docPlayer.curPosition = lbPlayer.curPosition;
       newLb[lbPlayerIdx] = docPlayer;
     } else {
-      try {
-        // Assign fullname & country that's available on the scorecard page
-        let name = await gotoScorecardPage(lbPlayer.playerId);
-        let country = name.match(/ \(.+\)/)[0];
-        if (country && typeof country === 'string') {
-          // Add a comma after last name
-          lbPlayer.name = name.replace(country, '').replace(' ', ', ');  // remove country
-          lbPlayer.country = country.match(/\((.+)\)/)[1].toUpperCase();
-        } else {
-          lbPlayer.name = name;
-        }
-        // Build/re-build rounds on lbPlayer
-        await buildRounds(lbPlayer);
-      } catch (e) {
-        console.log(e);
+      // Assign fullname & country that's available on the scorecard page
+      let name = await gotoScorecardPage(lbPlayer.playerId);
+      let country = name.match(/ \(.+\)/)[0];
+      if (country && typeof country === 'string') {
+        // Add a comma after last name
+        lbPlayer.name = name.replace(country, '').replace(' ', ', ');  // remove country
+        lbPlayer.country = country.match(/\((.+)\)/)[1].toUpperCase();
+      } else {
+        lbPlayer.name = name;
+      }
+      // Build/re-build rounds on lbPlayer
+      await buildRounds(lbPlayer);
       }
       // Determine if backNine
       const lastRoundHoles = lbPlayer.rounds && lbPlayer.rounds.length && lbPlayer.rounds[lbPlayer.rounds.length - 1].holes;
