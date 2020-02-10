@@ -254,7 +254,6 @@ async function updateTourneyLb(newLb) {
       }
       // Build/re-build rounds on lbPlayer
       await buildRounds(lbPlayer);
-      }
       // Determine if backNine
       const lastRoundHoles = lbPlayer.rounds && lbPlayer.rounds.length && lbPlayer.rounds[lbPlayer.rounds.length - 1].holes;
       if (lastRoundHoles) lbPlayer.backNine = lastRoundHoles[0].strokes === 0 && lastRoundHoles[9].strokes !== 0;
