@@ -32,12 +32,19 @@ module.exports = {
 async function startPolling() {
   await doSetup();
   while (!restartPollingFlag) {
-    try {
-      await poll();
-      await wait(POLLING_FREQ);
-    } catch(e) {
-      console.log('Error caught in startPolling\n', e);
+    const now = new Date();
+    // Restart every hour to handle memory leak
+    if (saveDate.getHours() !== now.getHours()) {
+      saveDate = now;
       restartPollingFlag = true;
+    } else {
+      try {
+        await poll();
+        await wait(POLLING_FREQ);
+      } catch(e) {
+        console.log('Error caught in startPolling\n', e);
+        restartPollingFlag = true;
+      }
     }
   }
   await stopPolling();
@@ -87,35 +94,37 @@ async function stopPolling() {
 /*--- scraping functions ---*/
 
 async function poll() {
+  console.log('Entered: poll');
   if (!settings.pollingActive) return;
   // Verify that the tournament has not changed
   [lbData.title] = await getLbTitleAndYear();
   if (
-      tourneyDoc.title !== lbData.title ||  // Tourney changed?
-      saveDate !== new Date().getDate()  // Reload every new day
+    tourneyDoc.title !== lbData.title ||  // Tourney changed?
+    saveDate !== new Date().getDate()  // Reload every new day
     ) {
-    // Stop and reload everything
-    restartPollingFlag = true;
-  } else {
-    // Update tourney doc in this block and notify if changes
-    await updateStats();
-    const newLb = await buildLb();
-    if (JSON.stringify(newLb) !== savePrevLb) {
-      savePrevLb = JSON.stringify(newLb);
-      await updateTourneyLb(newLb);
+      // Stop and reload everything
+      restartPollingFlag = true;
+    } else {
+      // Update tourney doc in this block and notify if changes
+      await updateStats();
+      const newLb = await buildLb();
+      if (JSON.stringify(newLb) !== savePrevLb) {
+        savePrevLb = JSON.stringify(newLb);
+        await updateTourneyLb(newLb);
+      }
+      if (tourneyDoc.isModified()) {
+        console.log('Saving tourneyDoc');
+        await tourneyDoc.save();
+        await updateSubscribersCallback(tourneyDoc);
+      }
     }
-    if (tourneyDoc.isModified()) {
-      console.log('Saving tourneyDoc');
-      await tourneyDoc.save();
-      await updateSubscribersCallback(tourneyDoc);
-    }
+    console.log('Exited: poll');
   }
-}
-
-function updatePayouts(newLb) {
-  let breakdown = payoutBreakdown;  // shorter var name :)
-  let pIdx = 0;
-  let mIdx = 0;
+  
+  function updatePayouts(newLb) {
+    let breakdown = payoutBreakdown;  // shorter var name :)
+    let pIdx = 0;
+    let mIdx = 0;
   // Verify that the player has started the tourney and boundaries
   while (newLb[pIdx] && newLb[pIdx].curPosition && pIdx < newLb.length) {
     let playerCount = newLb[pIdx].isAmateur ? 0 : 1;
