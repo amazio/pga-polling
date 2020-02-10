@@ -16,6 +16,7 @@ let savePrevLb;  // Cache the previous lb so that we can compare new lb and see 
 let payoutBreakdown;
 let timerId;
 let saveDate;  // Used to reload each new day
+let saveHour;  // Used to reload every hour
 
 let tourneyDoc;
 let lbData = {
@@ -32,10 +33,10 @@ module.exports = {
 async function startPolling() {
   await doSetup();
   while (!restartPollingFlag) {
-    const now = new Date();
+    const curHour = new Date().getHour();
     // Restart every hour to handle memory leak
-    if (saveDate.getHours() !== now.getHours()) {
-      saveDate = now;
+    if (saveHour !== curHour) {
+      saveHour = curHour;
       restartPollingFlag = true;
     } else {
       try {
@@ -60,6 +61,7 @@ async function doSetup() {
     await settings.save();
   }
   saveDate = new Date().getDate();
+  saveHour = new Date().getHour();
   browser = await pup.launch({
     headless: true,
     devtools: false,
