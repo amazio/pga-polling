@@ -170,7 +170,6 @@ async function updateStats() {
     const {startDate, endDate} = getStartAndEndDates(datesStr);
     let purse = document.querySelector('.event__header--info span:nth-child(3)').textContent;
     purse = purse.slice(purse.lastIndexOf('$') + 1).replace(/[^\d]/g, '');
-    if (!payoutBreakdown) payoutBreakdown = require(tourneyDoc.payoutPath)(parseInt(purse));
     return {
       purse,
       startDate,
@@ -183,6 +182,7 @@ async function updateStats() {
   });
   // Update tourney doc (if nothing actually changes, isModified will still be false)
   for (stat in stats) tourneyDoc[stat] = stats[stat];
+  if (!payoutBreakdown) payoutBreakdown = require(tourneyDoc.payoutPath)(tourneyDoc.purse);
 }
 
 async function buildLb() {
