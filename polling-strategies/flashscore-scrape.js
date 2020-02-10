@@ -33,7 +33,7 @@ module.exports = {
 async function startPolling() {
   await doSetup();
   while (!restartPollingFlag) {
-    const curHour = new Date().getHour();
+    const curHour = new Date().getHours();
     // Restart every hour to handle memory leak
     if (saveHour !== curHour) {
       saveHour = curHour;
@@ -61,7 +61,7 @@ async function doSetup() {
     await settings.save();
   }
   saveDate = new Date().getDate();
-  saveHour = new Date().getHour();
+  saveHour = new Date().getHours();
   browser = await pup.launch({
     headless: true,
     devtools: false,
