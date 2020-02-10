@@ -257,27 +257,23 @@ async function updateTourneyLb(newLb) {
 async function buildRounds(lbPlayer) {
   // TODO: remove log
   console.log(`Entered: buildRounds for ${lbPlayer.name} (${lbPlayer.playerId})`)
-  try {
-    const rounds = await scorecardPage.$eval('table#parts', function(table) {
-      const rounds = [];
-      const theads = table.querySelectorAll('thead');
-      const tbodys = table.querySelectorAll('tbody');
-      for (let roundIdx = 1; roundIdx <= theads.length; roundIdx++) {
-        const pars = Array.from(theads[roundIdx - 1].querySelectorAll('tr.golf-par-row td')).map(td => parseInt(td.textContent));
-        const strokes = Array.from(tbodys[roundIdx - 1].querySelectorAll('td')).map(td => parseInt(td.textContent || 0));
-        rounds.push({
-          num: roundIdx,
-          strokes: strokes.includes(0) ? null : strokes.reduce((acc, score) => acc + parseInt(score), 0),
-          holes: pars.map((par, holeIdx) => ({par, strokes: strokes[holeIdx]}))
-        });
-      }
-      return rounds;
-    });
-    lbPlayer.rounds = rounds;
-  } catch {
-    // No rounds yet
-    return [];
-  }
+  const rounds = await scorecardPage.$eval('table#parts', function(table) {
+    const rounds = [];
+    if (!table) return rounds;
+    const theads = table.querySelectorAll('thead');
+    const tbodys = table.querySelectorAll('tbody');
+    for (let roundIdx = 1; roundIdx <= theads.length; roundIdx++) {
+      const pars = Array.from(theads[roundIdx - 1].querySelectorAll('tr.golf-par-row td')).map(td => parseInt(td.textContent));
+      const strokes = Array.from(tbodys[roundIdx - 1].querySelectorAll('td')).map(td => parseInt(td.textContent || 0));
+      rounds.push({
+        num: roundIdx,
+        strokes: strokes.includes(0) ? null : strokes.reduce((acc, score) => acc + parseInt(score), 0),
+        holes: pars.map((par, holeIdx) => ({par, strokes: strokes[holeIdx]}))
+      });
+    }
+    return rounds;
+  });
+  lbPlayer.rounds = rounds;
 }
 
 async function getLbTitleAndYear() {
