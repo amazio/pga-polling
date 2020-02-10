@@ -331,6 +331,8 @@ async function getNewEmptyPage() {
   // Throw error on page error so that catch is triggered
   page.on('error', err => {throw err;});
   page.on('request', filterRequests);
+  let pages = await browser.pages();
+  console.log(`The browser currently has ${pages.length} pages`);
   return page;
 }
 
