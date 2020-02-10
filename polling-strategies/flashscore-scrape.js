@@ -15,14 +15,9 @@ let scorecardPage;  // Use over and over to load scorecard page as needed (may r
 let savePrevLb;  // Cache the previous lb so that we can compare new lb and see if something has changed
 let payoutBreakdown;
 let timerId;
-let saveDate;  // Used to reload each new day
 let saveHour;  // Used to reload every hour
 
 let tourneyDoc;
-let lbData = {
-  title: null,
-  year: null
-};
 
 module.exports = {
   startPolling,
@@ -60,7 +55,6 @@ async function doSetup() {
     settings.pollingActive = true;
     await settings.save();
   }
-  saveDate = new Date().getDate();
   saveHour = new Date().getHours();
   browser = await pup.launch({
     headless: true,
@@ -70,8 +64,8 @@ async function doSetup() {
   });
   lbPage = await getLbPage();
   scorecardPage = await getNewEmptyPage();
-  [lbData.title, lbData.year] = await getLbTitleAndYear();
-  tourneyDoc = await Tournament.findByTitleAndYear(lbData.title, lbData.year);
+  let [title, year] = await getLbTitleAndYear();
+  tourneyDoc = await Tournament.findByTitleAndYear(title, year);
   payoutBreakdown = require(tourneyDoc.payoutPath)(tourneyDoc.purse);
   console.log('Exiting: doSetup');
 }
@@ -97,34 +91,24 @@ async function stopPolling() {
 
 async function poll() {
   if (!settings.pollingActive) return;
-  // Verify that the tournament has not changed
-  [lbData.title] = await getLbTitleAndYear();
-  if (
-    tourneyDoc.title !== lbData.title ||  // Tourney changed?
-    saveDate !== new Date().getDate()  // Reload every new day
-    ) {
-      // Stop and reload everything
-      restartPollingFlag = true;
-    } else {
-      // Update tourney doc in this block and notify if changes
-      await updateStats();
-      const newLb = await buildLb();
-      if (JSON.stringify(newLb) !== savePrevLb) {
-        savePrevLb = JSON.stringify(newLb);
-        await updateTourneyLb(newLb);
-      }
-      if (tourneyDoc.isModified()) {
-        console.log('Saving tourneyDoc');
-        await tourneyDoc.save();
-        await updateSubscribersCallback(tourneyDoc);
-      }
-    }
+  // Update tourney doc in this block and notify if changes
+  await updateStats();
+  const newLb = await buildLb();
+  if (JSON.stringify(newLb) !== savePrevLb) {
+    savePrevLb = JSON.stringify(newLb);
+    await updateTourneyLb(newLb);
   }
+  if (tourneyDoc.isModified()) {
+    console.log('Saving tourneyDoc');
+    await tourneyDoc.save();
+    await updateSubscribersCallback(tourneyDoc);
+  }
+}
   
-  function updatePayouts(newLb) {
-    let breakdown = payoutBreakdown;  // shorter var name :)
-    let pIdx = 0;
-    let mIdx = 0;
+function updatePayouts(newLb) {
+  let breakdown = payoutBreakdown;  // shorter var name :)
+  let pIdx = 0;
+  let mIdx = 0;
   // Verify that the player has started the tourney and boundaries
   while (newLb[pIdx] && newLb[pIdx].curPosition && pIdx < newLb.length) {
     let playerCount = newLb[pIdx].isAmateur ? 0 : 1;
