@@ -11,7 +11,7 @@ let settings;
 let restartPollingFlag;
 let browser;
 let lbPage;  // Holds https://www.flashscore.com/golf/pga-tour/{current tourney name}/
-let scorecardPage;  // Use over and over to load scorecard page as needed (may replace below caching to save resources)
+let scorecardPage;  // Use over and over to load scorecard page as needed
 let savePrevLb;  // Cache the previous lb so that we can compare new lb and see if something has changed
 let payoutBreakdown;
 let saveHour;  // Used to reload every hour
@@ -78,6 +78,7 @@ async function stopPolling() {
   savePrevLb = null;
   scorecardPage = null;
   lbPage = null;
+  payoutBreakdown = null;
   console.log('Exiting: stopPolling');
 }
 
@@ -85,6 +86,11 @@ async function stopPolling() {
 
 async function poll() {
   if (!settings.pollingActive) return;
+  let [title] = await getLbTitleAndYear();
+  if (tourneyDoc.title !== title) { // Tourney changed?
+    restartPollingFlag = true;
+    return;
+  }
   // Update tourney doc in this block and notify if changes
   await updateStats();
   const newLb = await buildLb();
