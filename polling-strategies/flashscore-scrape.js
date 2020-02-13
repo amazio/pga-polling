@@ -86,11 +86,6 @@ async function stopPolling() {
 
 async function poll() {
   if (!settings.pollingActive) return;
-  let [title] = await getLbTitleAndYear();
-  if (tourneyDoc.title !== title) { // Tourney changed?
-    restartPollingFlag = true;
-    return;
-  }
   // Update tourney doc in this block and notify if changes
   await updateStats();
   const newLb = await buildLb();
@@ -263,8 +258,9 @@ async function updateTourneyLb(newLb) {
 async function buildRounds(lbPlayer) {
   // TODO: remove log
   console.log(`Entered: buildRounds for ${lbPlayer.name} (${lbPlayer.playerId})`);
+  let rounds;
   try {
-    const rounds = await scorecardPage.$eval('table#parts', function(table) {
+    rounds = await scorecardPage.$eval('table#parts', function(table) {
       const rounds = [];
       if (!table) return rounds;
       const theads = table.querySelectorAll('thead');
@@ -282,7 +278,7 @@ async function buildRounds(lbPlayer) {
     });
   } catch {
     // no table#parts yet (no rounds)
-    return [];
+    rounds = [];
   }
   lbPlayer.rounds = rounds;
 }
