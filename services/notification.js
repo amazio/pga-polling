@@ -37,7 +37,8 @@ async function updateSubscriber(subDoc, tourneyDoc) {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(tourneyDoc)
+      body: JSON.stringify(tourneyDoc),
+      timeout: 500
     }).then(res => res.json);
     subDoc.lastUpdated = new Date();
   } catch (e) {
