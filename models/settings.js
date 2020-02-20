@@ -18,9 +18,11 @@ const settingsSchema = new Schema({
     type: String,
     default: 'flashscore-scrape'
   },
-  subscriptions: [subscriptionSchema],
-  noTourneyAvailable: {type: Boolean, default: false},
-  recentPollError: Schema.Types.Mixed
+  overrideTourneyUrl: {
+    type: String,
+    default: ''
+  },
+  subscriptions: [subscriptionSchema]
 }, {
   timestamps: true
 });

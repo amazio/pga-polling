@@ -301,16 +301,22 @@ async function gotoScorecardPage(playerId) {
 }
 
 async function getLbPage() {
-  const URL_FOR_GETTING_CURRENT_TOURNEY = 'https://flashscore.com/golf/pga-tour';
+  let tourneyUrl;
   const page = await getNewEmptyPage();
   page.on('error', err => {throw err;});
-  await page.goto(URL_FOR_GETTING_CURRENT_TOURNEY, {waitUntil: 'networkidle0'});
-  // Get the ul that wraps the Current Tournaments
-  let text = await page.$eval('#mt', el => el.innerHTML);
-  const href = text.match(/href="(\/golf\/pga-tour\/[^/]+\/)"/);
+  if (settings.overrideTourneyUrl) {
+    tourneyUrl = settings.overrideTourneyUrl
+  } else {
+    const URL_FOR_GETTING_CURRENT_TOURNEY = 'https://flashscore.com/golf/pga-tour';
+    await page.goto(URL_FOR_GETTING_CURRENT_TOURNEY, {waitUntil: 'networkidle0'});
+    // Get the ul that wraps the Current Tournaments
+    let text = await page.$eval('#mt', el => el.innerHTML);
+    const href = text.match(/href="(\/golf\/pga-tour\/[^/]+\/)"/);
+    tourneyUrl = `${HOST}${href[1]}`;
+  }
   // FOR DEBUGGING PURPOSES
   // await page.goto(`https://www.flashscore.com/golf/pga-tour/the-american-express/`, {waitUntil: 'domcontentloaded'});
-  await page.goto(`${HOST}${href[1]}`, {waitUntil: 'domcontentloaded'});
+  await page.goto(tourneyUrl, {waitUntil: 'domcontentloaded'});
   await page.waitForSelector('.event__match--last');
   return page;
 }
