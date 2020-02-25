@@ -44,4 +44,13 @@
     <dd><%= tourney.roundState %></dd>
 </section>
 
+<section>
+  <form action="/set/tourney-url" method="POST">
+    <label>Set overrideTourneyUrl
+      <input type="text" name="url" value="<%= settings.overrideTourneyUrl %>">
+   </label>
+   <input type="submit" value="Update">
+  </form>
+</section>
+
 <%- include('./partials/footer') %>

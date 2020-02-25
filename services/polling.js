@@ -27,7 +27,7 @@ async function startPolling(req, res) {
 
 // Called via web page HTTP request to stop polling
 async function stopPolling(req, res) {
-  strategy.stopPolling();
+  await strategy.stopPolling();
   if (res) res.redirect('/');
 }
 
