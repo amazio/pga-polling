@@ -308,7 +308,8 @@ async function getLbPage() {
     tourneyUrl = settings.overrideTourneyUrl
   } else {
     const URL_FOR_GETTING_CURRENT_TOURNEY = 'https://flashscore.com/golf/pga-tour';
-    await page.goto(URL_FOR_GETTING_CURRENT_TOURNEY, {waitUntil: 'networkidle0'});
+    await page.goto(URL_FOR_GETTING_CURRENT_TOURNEY, {waitUntil: 'domcontentloaded'});
+    await page.waitForSelector('#mt');
     // Get the ul that wraps the Current Tournaments
     let text = await page.$eval('#mt', el => el.innerHTML);
     const href = text.match(/href="(\/golf\/pga-tour\/[^/]+\/)"/);
