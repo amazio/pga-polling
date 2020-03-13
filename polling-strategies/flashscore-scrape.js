@@ -156,6 +156,9 @@ async function updateStats() {
       case 'Finished':
         isStarted = isFinished = true;
         break;
+      case 'Cancelled':
+        isStarted = isFinished = true;
+        break;
       default:
         isStarted = true;
         isFinished = false;
@@ -166,7 +169,7 @@ async function updateStats() {
       roundState = status.startsWith('Round') ? 'In Progress' : 
         // TODO: still need to figure out roundState
         status.startsWith('After') ? 'Completed' : '?';
-    } else if (status.startsWith('Finished')) roundState = 'Completed';
+    } else if (status.startsWith('Finished') || status.startsWith('Cancelled')) roundState = 'Completed';
     let datesStr = document.querySelector('.event__header--info span:first-child').textContent;
     const {startDate, endDate} = getStartAndEndDates(datesStr);
     let purse = document.querySelector('.event__header--info span:nth-child(3)').textContent;
@@ -330,7 +333,6 @@ async function getNewEmptyPage() {
   page.on('error', err => {throw err;});
   page.on('request', filterRequests);
   let pages = await browser.pages();
-  console.log(`The browser currently has ${pages.length} pages`);
   return page;
 }
 
