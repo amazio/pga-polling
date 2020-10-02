@@ -1,12 +1,11 @@
 const pup = require('puppeteer');
+const notificationService = require('../services/notification');
 
 const HOST = 'https://flashscore.com';
 const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36';
 const POLLING_FREQ = 5000;
 
 const Tournament = require('../models/tournament');
-// TODO: delete
-// const updateSubscribersCallback = require('../services/notification').updateSubscribersCallback;
 
 let settings;
 let restartPollingFlag;
@@ -97,8 +96,7 @@ async function poll() {
   if (tourneyDoc.isModified()) {
     console.log('Saving tourneyDoc');
     await tourneyDoc.save();
-    // TODO: replace with io implementation
-    // await updateSubscribersCallback(tourneyDoc);
+    notificationService.notifyAll(tourneyDoc);
   }
 }
   

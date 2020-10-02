@@ -1,7 +1,6 @@
 const Tournament = require('../models/tournament');
 const fetch = require('node-fetch');
 const messages = require('../messages');
-const io = require('../io');
 
 let settings;
 (async function() {
@@ -14,7 +13,7 @@ module.exports = {
 };
 
 function notifyAll(tourneyDoc) {
-  io.emit(messages.LB_UPDATED, tourneyDoc);
+  global.io.emit(messages.LB_UPDATED, tourneyDoc);
 }
 
 // TODO: Delete
