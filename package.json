@@ -6,7 +6,7 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
-    "cookie-parser": "~1.4.4",
+    "cookie-parser": "^1.4.5",
     "cors": "^2.8.5",
     "debug": "~2.6.9",
     "dotenv": "^8.2.0",
@@ -14,12 +14,12 @@
     "express": "~4.16.1",
     "http-errors": "~1.6.3",
     "method-override": "^3.0.0",
-    "mongoose": "^5.8.11",
+    "mongoose": "^5.10.7",
     "morgan": "~1.9.1",
     "node-fetch": "^2.6.1",
     "puppeteer": "^2.1.1",
-    "request": "^2.88.0",
-    "request-promise-native": "^1.0.8",
+    "request": "^2.88.2",
+    "request-promise-native": "^1.0.9",
     "socket.io": "^2.3.0"
   }
 }

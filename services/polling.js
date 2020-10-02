@@ -1,5 +1,4 @@
 var path = require('path');
-var request = require('request-promise-native');
 
 const STRATEGY_DIR = path.join(__dirname, '..', 'polling-strategies');
 

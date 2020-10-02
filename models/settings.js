@@ -22,6 +22,7 @@ const settingsSchema = new Schema({
     type: String,
     default: ''
   },
+  // TODO:  Remove once converted to socket implementation
   subscriptions: [subscriptionSchema]
 }, {
   timestamps: true

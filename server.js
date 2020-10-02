@@ -14,7 +14,8 @@ var methodOverride = require('method-override');
 require('./services/polling').load();
 
 var indexRouter = require('./routes/index');
-var subscriptionsRouter = require('./routes/api/subscriptions');
+// TODO:  delete router
+// var subscriptionsRouter = require('./routes/api/subscriptions');
 var leaderboardsRouter = require('./routes/api/leaderboards');
 
 var app = express();
@@ -31,7 +32,8 @@ app.use(cors());
 app.use(methodOverride('_method'));
 
 app.use('/', indexRouter);
-app.use('/api/subscriptions', subscriptionsRouter);
+// TODO: delete
+// app.use('/api/subscriptions', subscriptionsRouter);
 app.use('/api/leaderboards', leaderboardsRouter);
 
 // catch 404 and forward to error handler

@@ -5,7 +5,8 @@ const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/
 const POLLING_FREQ = 5000;
 
 const Tournament = require('../models/tournament');
-const updateSubscribersCallback = require('../services/notification').updateSubscribersCallback;
+// TODO: delete
+// const updateSubscribersCallback = require('../services/notification').updateSubscribersCallback;
 
 let settings;
 let restartPollingFlag;
@@ -96,7 +97,8 @@ async function poll() {
   if (tourneyDoc.isModified()) {
     console.log('Saving tourneyDoc');
     await tourneyDoc.save();
-    await updateSubscribersCallback(tourneyDoc);
+    // TODO: replace with io implementation
+    // await updateSubscribersCallback(tourneyDoc);
   }
 }
   
