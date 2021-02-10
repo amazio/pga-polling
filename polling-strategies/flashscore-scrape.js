@@ -193,8 +193,8 @@ async function buildLb() {
   const leaderboard = await lbPage.evaluate(function() {
     let playerEls = document.querySelectorAll('div.sportName.golf div.event__match[id]');
     let lb = Array.from(playerEls).map(pEl => {
-      const resultEls = pEl.querySelectorAll('.event__result');
-      let shortName = pEl.querySelector('.event__participant').childNodes[1].nodeValue;
+      const resultEls = pEl.querySelectorAll('.event__center');
+      let shortName = pEl.querySelector('.event__participantName').childNodes[1].nodeValue;
       let thru = resultEls[1].textContent;
       let teeTime = thru.includes(':') ? thru : null;
       return {
