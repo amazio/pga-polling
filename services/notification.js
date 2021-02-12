@@ -12,8 +12,8 @@ module.exports = {
   notifyOne
 };
 
-function notifyAll(tourneyDoc) {
-  global.io.emit(messages.LB_UPDATED, tourneyDoc);
+function notifyAll(tourneyDoc, updatedPlayerIds) {
+  global.io.emit(messages.LB_UPDATED, {tourney: tourneyDoc, updatedPlayerIds});
 }
 
 async function notifyOne(socket, currentTourney) {

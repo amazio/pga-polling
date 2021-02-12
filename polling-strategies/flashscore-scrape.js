@@ -85,18 +85,19 @@ async function stopPolling() {
 /*--- scraping functions ---*/
 
 async function poll() {
+  let updatedPlayerIds;
   if (!settings.pollingActive) return;
   // Update tourney doc in this block and notify if changes
   await updateStats();
   const newLb = await buildLb();
   if (JSON.stringify(newLb) !== savePrevLb) {
     savePrevLb = JSON.stringify(newLb);
-    await updateTourneyLb(newLb);
+    updatedPlayerIds = await updateTourneyLb(newLb);
   }
   if (tourneyDoc.isModified()) {
     console.log('Saving tourneyDoc');
     await tourneyDoc.save();
-    notificationService.notifyAll(tourneyDoc);
+    notificationService.notifyAll(tourneyDoc, updatedPlayerIds);
   }
 }
   
@@ -223,6 +224,7 @@ async function buildLb() {
 async function updateTourneyLb(newLb) {
   // TODO: remove log
   console.log('Entered: updateTourneyLb')
+  let updatedPlayerIds = [];
   const docLb = tourneyDoc.leaderboard;
   // For each player in lb:
   for (lbPlayer of newLb) {
@@ -234,6 +236,7 @@ async function updateTourneyLb(newLb) {
       docPlayer.curPosition = lbPlayer.curPosition;
       newLb[lbPlayerIdx] = docPlayer;
     } else {
+      updatedPlayers.push(lbPlayer.playerId);
       // Assign fullname & country that's available on the scorecard page
       let name = await gotoScorecardPage(lbPlayer.playerId);
       let country = name.match(/ \(.+\)/)[0];
@@ -250,6 +253,7 @@ async function updateTourneyLb(newLb) {
       const lastRoundHoles = lbPlayer.rounds && lbPlayer.rounds.length && lbPlayer.rounds[lbPlayer.rounds.length - 1].holes;
       if (lastRoundHoles) lbPlayer.backNine = lastRoundHoles[0].strokes === 0 && lastRoundHoles[9].strokes !== 0;
     }
+    return updatedPlayerIds;
   }
   // Replace tourneyDoc.leaderboard with newLb
   if (tourneyDoc.isStarted) updatePayouts(newLb);
