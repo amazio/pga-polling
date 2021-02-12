@@ -19,5 +19,5 @@ function notifyAll(tourneyDoc, updatedPlayerIds) {
 async function notifyOne(socket, currentTourney) {
   // Default to current tourney if none provided
   currentTourney = currentTourney || await Tournament.findOne().sort({updatedAt: -1});
-  socket.emit(messages.LB_UPDATED, currentTourney);
+  socket.emit(messages.LB_UPDATED, {tourney: currentTourney, updatedPlayerIds: []});
 }
