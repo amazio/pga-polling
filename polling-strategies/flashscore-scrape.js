@@ -236,7 +236,7 @@ async function updateTourneyLb(newLb) {
       docPlayer.curPosition = lbPlayer.curPosition;
       newLb[lbPlayerIdx] = docPlayer;
     } else {
-      updatedPlayers.push(lbPlayer.playerId);
+      updatedPlayerIds.push(lbPlayer.playerId);
       // Assign fullname & country that's available on the scorecard page
       let name = await gotoScorecardPage(lbPlayer.playerId);
       let country = name.match(/ \(.+\)/)[0];
