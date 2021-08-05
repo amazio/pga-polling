@@ -266,24 +266,28 @@ async function buildRounds(lbPlayer) {
   console.log(`Entered: buildRounds for ${lbPlayer.name} (${lbPlayer.playerId})`);
   let rounds;
   try {
-    rounds = await scorecardPage.$eval('table#parts', function(table) {
+    rounds = await scorecardPage.$eval('#detailContent', function(detailDiv) {
       const rounds = [];
-      if (!table) return rounds;
-      const theads = table.querySelectorAll('thead');
-      const tbodys = table.querySelectorAll('tbody');
-      for (let roundIdx = 1; roundIdx <= theads.length; roundIdx++) {
-        const pars = Array.from(theads[roundIdx - 1].querySelectorAll('tr.golf-par-row td')).map(td => parseInt(td.textContent));
-        const strokes = Array.from(tbodys[roundIdx - 1].querySelectorAll('td')).map(td => parseInt(td.textContent || 0));
+      // find all divs that are being used as Round headers
+      const roundHeaderDivs = [...detailDiv.querySelectorAll('div[class^=header]')]
+        .filter(headerDiv => headerDiv.textContent.toLowerCase().startsWith('round'));
+      if (!roundHeaderDivs.length) return rounds;
+      // iterate for each round
+      roundHeaderDivs.forEach(function(headerDiv, roundIdx) {
+        // select the tbody that contains the trs that contain the hole #s, pars & strokes
+        const tbody = headerDiv.nextSibling.querySelector('tbody');
+        const pars = [...tbody.querySelectorAll('tr:nth-child(3) > td')].map(td => parseInt(td.textContent));
+        const strokes = [...tbody.querySelectorAll('tr:nth-child(4) > td')].map(td => parseInt(td.textContent || 0));
         rounds.push({
-          num: roundIdx,
+          num: roundIdx + 1,
           strokes: strokes.includes(0) ? null : strokes.reduce((acc, score) => acc + parseInt(score), 0),
           holes: pars.map((par, holeIdx) => ({par, strokes: strokes[holeIdx]}))
         });
-      }
+      });
       return rounds;
     });
   } catch {
-    // no table#parts yet (no rounds)
+    // no rounds yet?
     rounds = [];
   }
   lbPlayer.rounds = rounds;
@@ -301,8 +305,8 @@ async function getLbTitleAndYear() {
 async function gotoScorecardPage(playerId) {
   const URL_FOR_PLAYER_SCORECARD = `https://flashscore.com/match/${playerId}/p/#match-summary`;
   await scorecardPage.goto(URL_FOR_PLAYER_SCORECARD, {waitUntil: 'networkidle0'});
-  await scorecardPage.waitForSelector('#tab-match-summary');
-  let name = await scorecardPage.$eval('div.tname-participant a.participant-imglink', el => el.textContent);
+  await scorecardPage.waitForSelector('#detailContent');
+  let name = await scorecardPage.$eval('#detailContent > div:first:child > a > img', el => el.alt);
   return name;
 }
 
