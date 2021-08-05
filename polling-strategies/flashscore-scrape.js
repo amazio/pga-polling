@@ -306,7 +306,7 @@ async function gotoScorecardPage(playerId) {
   const URL_FOR_PLAYER_SCORECARD = `https://flashscore.com/match/${playerId}/p/#match-summary`;
   await scorecardPage.goto(URL_FOR_PLAYER_SCORECARD, {waitUntil: 'networkidle0'});
   await scorecardPage.waitForSelector('#detailContent');
-  let name = await scorecardPage.$eval('#detailContent > div:first:child > a > img', el => el.alt);
+  let name = await scorecardPage.$eval('#detailContent > div:first-child > a > img', el => el.alt);
   return name;
 }
 
