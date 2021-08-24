@@ -7,19 +7,19 @@ var pollingService = require('../services/polling');
 router.get('/', async function(req, res) {
   res.render('index', {
     settings: await Settings.findOne({}),
-    tourney: await (await Tournament.findOne().sort('-createdAt').limit(1)).exec()
+    tourney: await (await Tournament.findOne({}).sort('-createdAt').limit(1)).exec()
   });
 });
 
-router.post('/polling/stop', async function(req, res) {
-  await pollingService.stopPolling();
+router.post('/polling/stop', function(req, res) {
+  pollingService.stopPolling();
   setTimeout(function() {
     res.redirect('/');
   }, 4000);
 });
 
-router.post('/polling/start', async function(req, res) {
-  await pollingService.startPolling();
+router.post('/polling/start', function(req, res) {
+  pollingService.startPolling();
   setTimeout(function() {
     res.redirect('/');
   }, 4000);
