@@ -90,6 +90,7 @@ async function stopPolling() {
   scorecardPage = null;
   lbPage = null;
   payoutBreakdown = null;
+  inStartPolling = false;
   console.log('Exiting: stopPolling');
 }
 
