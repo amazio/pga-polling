@@ -43,7 +43,7 @@ async function startPolling() {
     }
   }
   await stopPolling();
-  return setTimeout(startPolling);
+  return setTimeout(startPolling, 10000);
 }
 
 async function doSetup() {
@@ -55,11 +55,12 @@ async function doSetup() {
     await settings.save();
   }
   saveHour = new Date().getHours();
+  if (browser) await browser.close();
   browser = await pup.launch({
     headless: true,
     devtools: false,
     env: {TZ: 'UTC'},
-    args: [`--user-agent=${USER_AGENT}`, '--no-sandbox', '--disable-setuid-sandbox']
+    args: [`--user-agent=${USER_AGENT}`, '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
   });
   lbPage = await getLbPage();
   scorecardPage = await getNewEmptyPage();
