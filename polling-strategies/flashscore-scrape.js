@@ -24,7 +24,15 @@ module.exports = {
 };
 
 // Called by polling service to start polling - should re-init state
+let inStartPolling = false;
 async function startPolling() {
+  if (inStartPolling) {
+    console.log('Already in startPolling - returning');
+    return;
+  } else {
+    console.log('Entered startPolling');
+    inStartPolling = true;
+  }
   await doSetup();
   while (!restartPollingFlag) {
     const curHour = new Date().getHours();
@@ -43,6 +51,8 @@ async function startPolling() {
     }
   }
   await stopPolling();
+  inStartPolling = false;
+  console.log('Exiting startPolling');
   return setTimeout(startPolling, 10000);
 }
 
