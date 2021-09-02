@@ -20,7 +20,7 @@ async function load() {
 
 // Called if settings.pollingActive & via web page HTTP request
 async function startPolling(req, res) {
-  strategy.startPolling();
+  await strategy.startPolling();
   if (res) res.redirect('/');
 }
 
