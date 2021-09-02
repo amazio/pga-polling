@@ -189,7 +189,7 @@ async function updateStats() {
       let purse = document.querySelector('.event__header--info span:nth-child(3)').textContent;
       purse = purse.slice(purse.lastIndexOf('$') + 1).replace(/[^\d]/g, '');
     } catch {
-      purse = '?';
+      purse = 0;
     }
     return {
       purse,
