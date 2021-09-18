@@ -185,8 +185,9 @@ async function updateStats() {
     } else if (status.startsWith('Finished') || status.startsWith('Cancelled')) roundState = 'Completed';
     let datesStr = document.querySelector('.event__header--info span:first-child').textContent;
     const {startDate, endDate} = getStartAndEndDates(datesStr);
+    let purse;
     try {
-      let purse = document.querySelector('.event__header--info span:nth-child(3)').textContent;
+      purse = document.querySelector('.event__header--info span:nth-child(3)').textContent;
       purse = purse.slice(purse.lastIndexOf('$') + 1).replace(/[^\d]/g, '');
     } catch {
       purse = 0;
