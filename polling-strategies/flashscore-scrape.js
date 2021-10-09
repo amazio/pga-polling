@@ -108,8 +108,13 @@ async function poll() {
   }
   if (tourneyDoc.isModified()) {
     console.log('Saving tourneyDoc');
-    await tourneyDoc.save();
-    notificationService.notifyAll(tourneyDoc, updatedPlayerIds);
+    try {
+      await tourneyDoc.save();
+      notificationService.notifyAll(tourneyDoc, updatedPlayerIds);
+    } catch (e) {
+      console.log('Could not save tourneyDoc in fn poll()');
+      console.log(e);
+    }
   }
 }
   
