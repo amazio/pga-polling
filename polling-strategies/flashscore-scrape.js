@@ -253,7 +253,7 @@ async function updateTourneyLb(newLb) {
     // Find player obj in tourneyDoc.leaderboard
     const docPlayer = docLb.find(docPlayer => docPlayer.playerId === lbPlayer.playerId);
     // Check if player has been updated AND all rounds are accounted for (in case of startup of polling in mid-tourney)
-    if (docPlayer && docPlayer.thru === lbPlayer.thru && lbPlayer.rounds.length === tourneyDoc.curRound) {
+    if (docPlayer && docPlayer.thru === lbPlayer.thru && docPlayer.rounds.length === tourneyDoc.curRound) {
       // Assign docPlayer to lbPlayer, but get curPosition
       const lbPlayerIdx = newLb.indexOf(lbPlayer);
       docPlayer.curPosition = lbPlayer.curPosition;
