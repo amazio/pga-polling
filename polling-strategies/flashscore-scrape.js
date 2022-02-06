@@ -317,8 +317,10 @@ async function buildRounds(lbPlayer) {
 }
 
 async function getLbTitleAndYear() {
-  const title = await lbPage.$eval('.teamHeader__info .teamHeader__name', el => el.textContent);
-  const year = await lbPage.$eval('.teamHeader__info .teamHeader__text', el => el.textContent);
+  // UPDATE 2/6/2022: const title = await lbPage.$eval('.teamHeader__info .teamHeader__name', el => el.textContent);
+  const title = await lbPage.$eval('.heading__name', el => el.textContent);
+  // UPDATE 2/6/2022: const year = await lbPage.$eval('.teamHeader__info .teamHeader__text', el => el.textContent);
+  const year = await lbPage.$eval('.heading__info', el => el.textContent);
   return [title.trim(), year.trim()];
 }
 
