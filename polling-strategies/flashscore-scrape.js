@@ -292,7 +292,7 @@ async function buildRounds(lbPlayer) {
     rounds = await scorecardPage.$eval('#detailContent', function(detailDiv) {
       const rounds = [];
       // find all divs that are being used as Round headers
-      const roundHeaderDivs = [...detailDiv.querySelectorAll('div[class=golfSummaryTab__header]')]
+      const roundHeaderDivs = [...detailDiv.querySelectorAll('div[class=section__title]')]
         .filter(headerDiv => headerDiv.textContent.toLowerCase().startsWith('round'));
       if (!roundHeaderDivs.length) return rounds;
       // iterate for each round
