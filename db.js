@@ -2,7 +2,8 @@ require('dotenv').config();
 require('./config/database');
 var T = require('./models/tournament');
 var t;
+let recent;
 
 (async function() {
-  let recent = await T.findOne({}).sort('-updatedAt');
+  recent = await T.findOne({}).sort('-updatedAt');
 })();
