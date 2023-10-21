@@ -1,4 +1,7 @@
-const pup = require('puppeteer');
+const pup = require('puppeteer-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+pup.use(StealthPlugin());
+
 const notificationService = require('../services/notification');
 
 const HOST = 'https://flashscore.com';
@@ -67,11 +70,15 @@ async function doSetup() {
   saveHour = new Date().getHours();
   if (browser) await browser.close();
   browser = await pup.launch({
-    headless: true,
+    headless: 'new',
     devtools: false,
-    env: {TZ: 'UTC'},
-    args: [`--user-agent=${USER_AGENT}`, '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
   });
+  // browser = await pup.launch({
+  //   headless: true,
+  //   devtools: false,
+  //   env: {TZ: 'UTC'},
+  //   args: [`--user-agent=${USER_AGENT}`, '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+  // });
   lbPage = await getLbPage();
   scorecardPage = await getNewEmptyPage();
   let [title, year] = await getLbTitleAndYear();
